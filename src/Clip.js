@@ -2,7 +2,8 @@ import fetch from './fetch.js';
 import getContext from './getContext.js';
 import { copy } from './utils/buffer.js';
 
-const PROXY_DURATION = 10;
+const PROXY_DURATION = 20;
+const CHUNK_SIZE = 256 * 1024;
 
 export default class Clip {
 	constructor ({ url }) {
@@ -16,15 +17,23 @@ export default class Clip {
 		this._p = 0;
 		this._data = null;
 		this._source = null;
+
+		this._volume = 1;
+		this._gain = this.context.createGain();
 	}
 
 	buffer () {
 		if ( !this._promise ) {
 			return fetch( this.url ).then( response => {
+				console.dir( 'response', response )
 				return new Promise( ( fulfil, reject ) => {
 					const length = response.headers.get( 'content-length' );
-					console.log( 'length', length )
-					this._data = new Uint8Array( length );
+
+					if ( !length ) {
+						return reject( new Error( 'missing content-length header' ) );
+					}
+
+					this._data = new Uint8Array( +length );
 
 					const reader = response.body.getReader();
 
@@ -129,6 +138,15 @@ export default class Clip {
 		};
 	}
 
+	once ( eventName, cb ) {
+		const _cb = () => {
+			cb();
+			this.off( eventName, _cb );
+		};
+
+		return this.on( eventName, _cb );
+	}
+
 	play () {
 		if ( this.playing ) {
 			console.warn( 'clip.play() was called on a clip that was already playing' );
@@ -141,22 +159,20 @@ export default class Clip {
 			return this;
 		}
 
+		this._fire( 'play' );
+
 		let playing = this.playing = true;
 		const pauseListener = this.on( 'pause', () => {
 			playing = false;
 			pauseListener.cancel();
 		});
 
-		const chunkSize = 64 * 1024;
-
-		let q = chunkSize; // last byte of source data that was decoded
+		let q = CHUNK_SIZE; // last byte of source data that was decoded
 		let r = 0; // last byte of target data
 
 		// decode initial chunk...
-		this.context.decodeAudioData( this._data.buffer.slice( 0, q = chunkSize ), source => {
+		this.context.decodeAudioData( this._data.buffer.slice( 0, q ), source => {
 			if ( !playing ) return;
-
-			console.log( 'source', source )
 
 			const numberOfChannels = source.numberOfChannels;
 			const sampleRate = this.context.sampleRate;
@@ -164,7 +180,6 @@ export default class Clip {
 			const target = this.context.createBuffer( numberOfChannels, sampleRate * PROXY_DURATION, sampleRate );
 
 			const startTime = this.context.currentTime;
-			console.log( 'startTime', startTime )
 			let runwayEnd = startTime;
 
 			// periodically update with new data
@@ -172,7 +187,7 @@ export default class Clip {
 				if ( !playing ) return;
 
 				const start = q;
-				const end = q += chunkSize;
+				const end = q += CHUNK_SIZE;
 
 				if ( !this.loaded && end > this._p ) {
 					setTimeout( update, 500 );
@@ -182,9 +197,16 @@ export default class Clip {
 				this.context.decodeAudioData( this._data.buffer.slice( start, end ), copyToTarget );
 			};
 
-			const copyToTarget = source => {
-				console.log( `replacing ${r / sampleRate} to ${(r + source.length) /sampleRate}` )
+			const endGame = () => {
+				if ( this.context.currentTime > runwayEnd ) {
+					this._fire( 'ended' );
+					this.pause();
+				} else {
+					requestAnimationFrame( endGame );
+				}
+			};
 
+			const copyToTarget = source => {
 				for ( let chan = 0; chan < numberOfChannels; chan += 1 ) {
 					const sourceBuffer = source.getChannelData( chan );
 					const targetBuffer = target.getChannelData( chan );
@@ -199,31 +221,16 @@ export default class Clip {
 
 				// is this the final chunk? blank everything out
 				if ( q > this._data.length ) {
-					console.log( '>>>finished!' )
+					// TODO need to blank anything out?
+					endGame();
+				} else {
+					// schedule next update
+					const timeNow = this.context.currentTime;
+					const remainingRunway = runwayEnd - timeNow;
 
-					for ( let chan = 0; chan < numberOfChannels; chan += 1 ) {
-						const sourceBuffer = source.getChannelData( chan );
-						const targetBuffer = target.getChannelData( chan );
-
-						for ( let i = r % targetBuffer.length; i < targetBuffer.length; i += 1 ) {
-							targetBuffer[i] = 0;
-						}
-					}
+					const scheduled = Math.max( 0, remainingRunway - 0.5 );
+					setTimeout( update, scheduled * 1e3 );
 				}
-
-				console.log( 'runwayEnd', runwayEnd )
-
-
-				// schedule next update
-				const timeNow = this.context.currentTime;
-				const remainingRunway = runwayEnd - timeNow;
-
-				console.log( 'remainingRunway', remainingRunway )
-
-				const scheduled = Math.max( 0, remainingRunway - 0.5 );
-				console.log( `scheduling update for ${scheduled}s from now` )
-
-				setTimeout( update, scheduled * 1e3 );
 			};
 
 			copyToTarget( source );
@@ -231,11 +238,11 @@ export default class Clip {
 			this._source = this.context.createBufferSource();
 			this._source.loop = true;
 			this._source.buffer = target;
-			this._source.connect( this.context.destination );
+
+			this._source.connect( this._gain );
+			this._gain.connect( this.context.destination );
 
 			this._source.start();
-
-			const chunkSize = 64 * 1024;
 		});
 
 		return this;
@@ -247,6 +254,8 @@ export default class Clip {
 			return this;
 		}
 
+		this._fire( 'pause' );
+
 		if ( this._source ) {
 			this._source.stop();
 			this._source = null;
@@ -255,6 +264,15 @@ export default class Clip {
 		this.playing = false;
 
 		return this;
+	}
+
+	get volume () {
+		return this._volume;
+	}
+
+	set volume ( volume ) {
+		this._volume = volume;
+		if ( this._source ) this._gain.gain.value = volume;
 	}
 
 	_fire ( eventName, data ) {
