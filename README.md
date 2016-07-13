@@ -13,4 +13,29 @@ Using the Web Audio API's `AudioBufferSourceNode` we can load the audio, convert
 
 Phonograph solves this problem by only storing chunks of PCM data, and using `fetch()` where possible to facilitate streaming.
 
-More soon...
+
+## Installation
+
+```bash
+npm i phonograph
+```
+
+...or download from [npmcdn.com/phonograph](https://npmcdn.com/phonograph).
+
+
+## Usage
+
+```js
+import { Clip } from 'phonograph';
+
+const clip = new Clip({ url: 'large-file.mp3' });
+
+clip.buffer().then( () => {
+	clip.play();
+});
+```
+
+
+## License
+
+MIT

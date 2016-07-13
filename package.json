@@ -2,5 +2,32 @@
   "devDependencies": {
     "rollup": "^0.34.1",
     "rollup-plugin-buble": "^0.12.1"
-  }
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w"
+  },
+  "name": "phonograph",
+  "description": "Play audio files without the dreaded 'DOMException: play() can only be initiated by a user gesture' error.",
+  "version": "1.0.0",
+  "main": "dist/phonograph.umd.js",
+  "jsnext:main": "dist/phonograph.es.js",
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/Rich-Harris/phonograph.git"
+  },
+  "keywords": [
+    "audio",
+    "web",
+    "audio",
+    "mp3",
+    "wav"
+  ],
+  "author": "Rich Harris",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://gitlab.com/Rich-Harris/phonograph/issues"
+  },
+  "homepage": "https://gitlab.com/Rich-Harris/phonograph#README"
 }
