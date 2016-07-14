@@ -1,12 +1,12 @@
 import fetch from './fetch.js';
 import getContext from './getContext.js';
-import { copy } from './utils/buffer.js';
+import { copy, slice } from './utils/buffer.js';
 
 const PROXY_DURATION = 20;
 const CHUNK_SIZE = 256 * 1024;
 
 export default class Clip {
-	constructor ({ url }) {
+	constructor ({ url, volume }) {
 		this.url = url;
 		this.callbacks = {};
 		this.context = getContext();
@@ -18,20 +18,17 @@ export default class Clip {
 		this._data = null;
 		this._source = null;
 
-		this._volume = 1;
+		this._volume = volume || 1;
 		this._gain = this.context.createGain();
+		this._gain.gain.value = this._volume;
 	}
 
 	buffer () {
 		if ( !this._promise ) {
 			return fetch( this.url ).then( response => {
-				console.dir( 'response', response )
 				return new Promise( ( fulfil, reject ) => {
 					const length = response.headers.get( 'content-length' );
-
-					if ( !length ) {
-						return reject( new Error( 'missing content-length header' ) );
-					}
+					if ( !length ) return reject( new Error( 'missing content-length header' ) );
 
 					this._data = new Uint8Array( +length );
 
@@ -54,7 +51,7 @@ export default class Clip {
 						lastP = p;
 						const scale = length / p;
 
-						this.context.decodeAudioData( this._data.slice( 0, p ).buffer, snippet => {
+						this._decode( slice( this._data, 0, p ), snippet => {
 							this.estimatedDuration = snippet.duration * scale;
 
 							if ( lastP > 262144 ) {
@@ -63,6 +60,8 @@ export default class Clip {
 							}
 
 							setTimeout( estimateDuration, 200 );
+						}, err => {
+							this._fire( 'error', err );
 						});
 					};
 
@@ -171,7 +170,7 @@ export default class Clip {
 		let r = 0; // last byte of target data
 
 		// decode initial chunk...
-		this.context.decodeAudioData( this._data.buffer.slice( 0, q ), source => {
+		this._decode( slice( this._data, 32, q ), source => {
 			if ( !playing ) return;
 
 			const numberOfChannels = source.numberOfChannels;
@@ -187,14 +186,14 @@ export default class Clip {
 				if ( !playing ) return;
 
 				const start = q;
-				const end = q += CHUNK_SIZE;
+				const end = ( q += CHUNK_SIZE );
 
 				if ( !this.loaded && end > this._p ) {
 					setTimeout( update, 500 );
 					return;
 				}
 
-				this.context.decodeAudioData( this._data.buffer.slice( start, end ), copyToTarget );
+				this._decode( slice( this._data, start, end ), copyToTarget );
 			};
 
 			const endGame = () => {
@@ -273,6 +272,22 @@ export default class Clip {
 	set volume ( volume ) {
 		this._volume = volume;
 		if ( this._source ) this._gain.gain.value = volume;
+	}
+
+	_decode ( view, callback, errback ) {
+		this.context.decodeAudioData( view.buffer, callback, err => {
+			if ( err ) return errback( err );
+
+			// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
+			// Thanks Safari developers, you absolute numpties
+			for ( let i = 0; i < view.length - 1; i += 1 ) {
+				if ( view[i] === 0xFF && view[i+1] & 0xE0 === 0xE0 ) {
+					return this._decode( slice( view, i, view.length ), callback, errback );
+				}
+			}
+
+			errback( new Error( 'Could not decode audio buffer' ) );
+		});
 	}
 
 	_fire ( eventName, data ) {

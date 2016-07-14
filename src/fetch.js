@@ -1,3 +1,5 @@
+import { slice } from './utils/buffer.js';
+
 const fetch = window.fetch || _fetch;
 
 function _fetch ( url ) {
@@ -18,17 +20,17 @@ function _fetch ( url ) {
 
 class Response {
 	constructor ( data ) {
-		this.data = data;
+		this.data = new Uint8Array( data );
 
 		this.headers = {
 			get: header => {
-				if ( header === 'content-length' ) return data.length;
+				if ( header === 'content-length' ) return this.data.length;
 				return null;
 			}
 		};
 
 		this.body = {
-			getReader: () => new Reader( data )
+			getReader: () => new Reader( this.data )
 		};
 	}
 }
@@ -45,9 +47,9 @@ class Reader {
 	read () {
 		const chunk = this.done ?
 			{ done: true, value: null } :
-			{ done: false, value: this.data.slice( p, p += this.chunkSize ) };
+			{ done: false, value: this.data };
 
-		this.done = p > this.data.length;
+		this.done = true;
 		return Promise.resolve( chunk )
 	}
 }
