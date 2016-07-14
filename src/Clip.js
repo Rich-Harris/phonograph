@@ -2,9 +2,10 @@ import Loader from './Loader.js';
 import Chunk from './Chunk.js';
 import getContext from './getContext.js';
 import { copy, slice } from './utils/buffer.js';
+import isFrameHeader from './utils/isFrameHeader.js';
 
 const PROXY_DURATION = 20;
-const CHUNK_SIZE = 64 * 1024;
+const CHUNK_SIZE = 128 * 1024;
 
 export default class Clip {
 	constructor ({ url, volume }) {
@@ -91,7 +92,7 @@ export default class Clip {
 						for ( let i = 0; i < uint8Array.length; i += 1 ) {
 							// once the buffer is large enough, wait for
 							// the next frame header then drain it
-							if ( p > CHUNK_SIZE && uint8Array[i] === 0xFF && uint8Array[i+1] & 0xE0 === 0xE0 ) {
+							if ( p > CHUNK_SIZE && isFrameHeader( uint8Array, i ) ) {
 								const chunk = new Chunk({
 									clip: this,
 									raw: slice( tempBuffer, 0, p ),
