@@ -44,8 +44,4 @@ export default class Chunk {
 	decode ( callback, errback ) {
 		this.clip.context.decodeAudioData( this.buffer, callback, errback );
 	}
-
-	play () {
-		this.decode
-	}
 }
