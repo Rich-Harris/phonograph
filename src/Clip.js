@@ -28,6 +28,8 @@ export default class Clip {
 		this._gain = this.context.createGain();
 		this._gain.gain.value = this._volume;
 
+		this._gain.connect( this.context.destination );
+
 		this._timeIndices = [
 			{ time: 0, firstByte: 32 } // firstByte isn't zero, because we need to work around an insane Safari bug (see 'filthy hack' below)
 		];
@@ -109,6 +111,20 @@ export default class Clip {
 					},
 
 					onload: () => {
+						if ( p ) {
+							// drain temp buffer
+							const chunk = new Chunk({
+								clip: this,
+								raw: slice( tempBuffer, 0, p ),
+
+								ondecode: this.canplaythrough ? null : checkCanplaythrough
+							});
+
+							this._chunks.push( chunk );
+
+							this._totalLoadedBytes += p;
+						}
+
 						if ( !this.canplaythrough ) {
 							this.canplaythrough = true;
 							this._fire( 'canplaythrough' );
@@ -162,127 +178,15 @@ export default class Clip {
 			return this;
 		}
 
+		this.playing = true;
+
 		if ( !this.canplaythrough ) {
 			console.warn( 'clip.play() was called before clip.canplaythrough === true' );
 			this.buffer().then( () => this.play() );
 			return this;
 		}
 
-		console.log( 'this._chunks', this._chunks )
-
-		this._fire( 'play' );
-
-		let playing = this.playing = true;
-		const pauseListener = this.on( 'pause', () => {
-			playing = false;
-			pauseListener.cancel();
-		});
-
-		let sourceByte = CHUNK_SIZE; // last byte of source data that was decoded
-		let targetByte = 0; // last byte of target data
-
-		this._currentTimeAtStart = this._currentTime;
-
-		let timeIndex;
-		for ( let i = 0; i < this._timeIndices.length; i += 1 ) {
-			if ( this._timeIndices[i].time > this._currentTimeAtStart ) continue;
-			timeIndex = this._timeIndices[i];
-		}
-
-		// decode initial chunk...
-		this._decode( slice( this._data, timeIndex.firstByte, ( sourceByte = timeIndex.firstByte + CHUNK_SIZE ) ), source => {
-			if ( !playing ) return;
-
-			const numberOfChannels = source.numberOfChannels;
-			const sampleRate = this.context.sampleRate;
-
-			const target = this.context.createBuffer( numberOfChannels, sampleRate * PROXY_DURATION, sampleRate );
-
-			let timeOffset = ( this._currentTime - timeIndex.time );
-			let sampleOffset = ~~( sampleRate * timeOffset );
-
-			this._startTime = this.context.currentTime;
-			let runwayEnd = this._startTime;
-
-			// periodically update with new data
-			const update = () => {
-				if ( !playing ) return;
-
-				const start = sourceByte;
-				const end = ( sourceByte += CHUNK_SIZE );
-
-				const lastTimeIndex = this._timeIndices[ this._timeIndices.length - 1 ];
-				if ( lastTimeIndex.firstByte < start ) {
-					this._timeIndices.push({ firstByte: start, time: runwayEnd });
-				}
-
-				if ( !this.loaded && end > this._p ) {
-					// content not yet buffered
-					setTimeout( update, 500 );
-					return;
-				}
-
-				this._decode( slice( this._data, start, end ), copyToTarget );
-			};
-
-			const endGame = () => {
-				if ( this.context.currentTime > runwayEnd ) {
-					this._fire( 'ended' );
-					this.pause();
-					this._currentTime = 0;
-				} else {
-					requestAnimationFrame( endGame );
-				}
-			};
-
-			const copyToTarget = decoded => {
-				for ( let chan = 0; chan < numberOfChannels; chan += 1 ) {
-					const sourceBuffer = decoded.getChannelData( chan );
-					const targetBuffer = target.getChannelData( chan );
-
-					for ( let i = sampleOffset; i < sourceBuffer.length; i += 1 ) {
-						targetBuffer[ ( i + targetByte - sampleOffset ) % targetBuffer.length ] = sourceBuffer[i];
-					}
-				}
-
-				targetByte += decoded.length - sampleOffset;
-				runwayEnd += decoded.duration - timeOffset;
-
-				sampleOffset = timeOffset = 0;
-
-				// is this the final chunk? blank everything out
-				if ( sourceByte > this._data.length ) {
-					// TODO need to blank anything out?
-					endGame();
-				} else {
-					// schedule next update
-					const timeNow = this.context.currentTime;
-					const remainingRunway = runwayEnd - timeNow;
-
-					const scheduled = Math.max( 0, remainingRunway - 0.5 );
-					setTimeout( update, scheduled * 1e3 );
-				}
-			};
-
-			const chunkEndTime = timeIndex.time + source.duration;
-			if ( chunkEndTime < this._currentTime ) {
-				console.warn( `seeking to content that has not been buffered (seeked ${this._currentTime}, only buffered up to ${chunkEndTime})` );
-				update();
-			}
-
-			copyToTarget( source );
-
-			this._source = this.context.createBufferSource();
-			this._source.loop = true;
-			this._source.buffer = target;
-
-			this._source.connect( this._gain );
-			this._gain.connect( this.context.destination );
-
-			this._source.start();
-		});
-
-		return this;
+		this._play();
 	}
 
 	pause () {
@@ -291,16 +195,10 @@ export default class Clip {
 			return this;
 		}
 
-		this._currentTime = this._currentTimeAtStart + ( this.context.currentTime - this._startTime );
+		this.playing = false;
+		this._currentTime = this._startTime + ( this.context.currentTime - this._contextTimeAtStart );
 
 		this._fire( 'pause' );
-
-		if ( this._source ) {
-			this._source.stop();
-			this._source = null;
-		}
-
-		this.playing = false;
 
 		return this;
 	}
@@ -353,5 +251,103 @@ export default class Clip {
 		if ( !callbacks ) return;
 
 		callbacks.forEach( cb => cb( data ) );
+	}
+
+	_play () {
+		let chunkIndex;
+		let time = 0;
+		for ( chunkIndex = 0; chunkIndex < this._chunks.length; chunkIndex += 1 ) {
+			const chunk = this._chunks[ chunkIndex ];
+
+			if ( !chunk.duration ) {
+				console.warn( 'attempted to play content that has not yet buffered' );
+				setTimeout( () => {
+					this._play();
+				}, 100 );
+				return;
+			}
+
+			const chunkEnd = time + chunk.duration;
+			if ( chunkEnd > this._currentTime ) break;
+
+			time = chunkEnd;
+		}
+
+		this._startTime = this._currentTime;
+		const timeOffset = this._currentTime - time;
+
+		this._fire( 'play' );
+
+		let playing = true;
+		const pauseListener = this.on( 'pause', () => {
+			playing = false;
+
+			if ( previousSource ) previousSource.stop();
+			if ( currentSource ) currentSource.stop();
+			pauseListener.cancel();
+		});
+
+		const i = chunkIndex++ % this._chunks.length;
+
+		let chunk = this._chunks[i];
+		let previousSource;
+		let currentSource;
+
+		chunk.createSource( timeOffset, source => {
+			currentSource = source;
+
+			this._contextTimeAtStart = this.context.currentTime;
+
+			source.connect( this._gain );
+			source.start();
+
+			let lastStart = this._contextTimeAtStart;
+			let nextStart = this._contextTimeAtStart + ( chunk.duration - timeOffset );
+
+			const endGame = () => {
+				if ( this.context.currentTime >= nextStart ) {
+					this.pause()._currentTime = 0;
+					this._fire( 'ended' );
+				} else {
+					requestAnimationFrame( endGame );
+				}
+			}
+
+			const advance = () => {
+				if ( !playing ) return;
+
+				let i = chunkIndex++;
+				if ( this.loop ) i %= this._chunks.length;
+
+				chunk = this._chunks[i];
+
+				if ( chunk ) {
+					chunk.createSource( 0, source => {
+						previousSource = currentSource;
+						currentSource = source;
+
+						source.connect( this._gain );
+						source.start( nextStart );
+
+						lastStart = nextStart;
+						nextStart += chunk.duration;
+
+						tick();
+					});
+				} else {
+					endGame();
+				}
+			};
+
+			const tick = () => {
+				if ( this.context.currentTime > lastStart ) {
+					advance();
+				} else {
+					setTimeout( tick, 500 );
+				}
+			};
+
+			tick();
+		});
 	}
 }
