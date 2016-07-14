@@ -2,7 +2,11 @@ import buble from 'rollup-plugin-buble';
 
 export default {
 	entry: 'src/index.js',
-	plugins: [ buble() ],
+	plugins: [
+		buble({
+			transforms: { dangerousForOf: true }
+		})
+	],
 	moduleName: 'Phonograph',
 	sourceMap: true,
 	targets: [

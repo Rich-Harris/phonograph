@@ -1,4 +1,5 @@
-import fetch from './fetch.js';
+import Loader from './Loader.js';
+import Chunk from './Chunk.js';
 import getContext from './getContext.js';
 import { copy, slice } from './utils/buffer.js';
 
@@ -11,10 +12,13 @@ export default class Clip {
 		this.callbacks = {};
 		this.context = getContext();
 
+		this.length = 0;
+
+		this.loader = new Loader( url );
 		this.loaded = false;
 		this.canplaythrough = false;
 
-		this._p = 0;
+		this._totalLoadedBytes = 0;
 		this._data = null;
 		this._source = null;
 
@@ -27,98 +31,98 @@ export default class Clip {
 		this._timeIndices = [
 			{ time: 0, firstByte: 32 } // firstByte isn't zero, because we need to work around an insane Safari bug (see 'filthy hack' below)
 		];
+
+		this._chunks = [];
 	}
 
-	buffer () {
+	buffer ( complete ) {
 		if ( !this._promise ) {
-			return fetch( this.url ).then( response => {
-				return new Promise( ( fulfil, reject ) => {
-					const length = response.headers.get( 'content-length' );
-					if ( !length ) return reject( new Error( 'missing content-length header' ) );
+			this._promise = new Promise( ( fulfil, reject ) => {
+				let tempBuffer = new Uint8Array( CHUNK_SIZE * 2 );
+				let p = 0;
 
-					this._data = new Uint8Array( +length );
+				let loadStartTime = Date.now();
 
-					const reader = response.body.getReader();
+				const checkCanplaythrough = () => {
+					if ( this.canplaythrough || !this.length ) return;
 
-					const fetchStartTime = Date.now();
+					let duration = 0;
+					let bytes = 0;
 
-					let lastP = 0;
+					for ( let chunk of this._chunks ) {
+						if ( !chunk.duration ) break;
+						duration += chunk.duration;
+						bytes += chunk.buffer.byteLength;
+					}
 
-					const estimateDuration = () => {
-						if ( this.canplaythrough ) return;
+					if ( !duration ) return;
 
-						const p = this._p;
+					const scale = this.length / bytes;
+					const estimatedDuration = duration * scale;
 
-						if ( p - lastP < 32768 ) {
-							setTimeout( estimateDuration, 200 );
-							return;
+					const timeNow = Date.now();
+					const elapsed = timeNow - loadStartTime;
+
+					const bitrate = this._totalLoadedBytes / elapsed;
+					const estimatedTimeToDownload = 1.5 * ( this.length - this._totalLoadedBytes ) / bitrate / 1e3;
+
+					// if we have enough audio that we can start playing now
+					// and finish downloading before we run out, we've
+					// reached canplaythrough
+					const availableAudio = ( bytes / this.length ) * estimatedDuration;
+
+					if ( availableAudio > estimatedTimeToDownload ) {
+						this.canplaythrough = true;
+						this._fire( 'canplaythrough' );
+
+						fulfil();
+					}
+				};
+
+				this.loader.load({
+					onprogress: ( progress, length, total ) => {
+						this.length = total;
+						this._fire( 'progress', { progress, length, total });
+					},
+
+					ondata: ( uint8Array ) => {
+						for ( let i = 0; i < uint8Array.length; i += 1 ) {
+							// once the buffer is large enough, wait for
+							// the next frame header then drain it
+							if ( p > CHUNK_SIZE && uint8Array[i] === 0xFF && uint8Array[i+1] & 0xE0 === 0xE0 ) {
+								const chunk = new Chunk({
+									clip: this,
+									raw: slice( tempBuffer, 0, p ),
+
+									ondecode: this.canplaythrough ? null : checkCanplaythrough
+								});
+
+								this._chunks.push( chunk );
+								p = 0;
+							}
+
+							// write new data to buffer
+							tempBuffer[ p++ ] = uint8Array[i];
 						}
 
-						lastP = p;
-						const scale = length / p;
+						this._totalLoadedBytes += uint8Array.length;
+					},
 
-						this._decode( slice( this._data, 0, p ), snippet => {
-							this.estimatedDuration = snippet.duration * scale;
+					onload: () => {
+						if ( !this.canplaythrough ) {
+							this.canplaythrough = true;
+							this._fire( 'canplaythrough' );
+						}
 
-							if ( lastP > 262144 ) {
-								// stop trying to improve the accuracy past 256kb
-								return;
-							}
+						this.loaded = true;
+						this._fire( 'load' );
 
-							setTimeout( estimateDuration, 200 );
-						}, err => {
-							this._fire( 'error', err );
-						});
-					};
+						fulfil();
+					},
 
-					setTimeout( estimateDuration, 50 );
-
-					const read = () => {
-						return reader.read().then( chunk => {
-							if ( chunk.done ) {
-								if ( !this.canplaythrough ) {
-									this.canplaythrough = true;
-									this._fire( 'canplaythrough' );
-
-									fulfil();
-								}
-
-								this.loaded = true;
-								this._fire( 'load' );
-								return;
-							}
-
-							for ( let i = 0; i < chunk.value.length; i += 1 ) {
-								this._data[ this._p++ ] = chunk.value[i];
-							}
-
-							read();
-
-							if ( !this.canplaythrough ) {
-								if ( this.estimatedDuration ) {
-									const timeNow = Date.now();
-									const elapsed = timeNow - fetchStartTime;
-
-									const bitrate = this._p / elapsed;
-									const estimatedTimeToDownload = 1.5 * ( length - this._p ) / bitrate / 1e3;
-
-									// if we have enough audio that we can start playing now
-									// and finish downloading before we run out, we've
-									// reached canplaythrough
-									const availableAudio = ( this._p / length ) * this.estimatedDuration;
-
-									if ( availableAudio > estimatedTimeToDownload ) {
-										this.canplaythrough = true;
-										this._fire( 'canplaythrough' );
-
-										fulfil();
-									}
-								}
-							}
-						}).catch( reject );
-					};
-
-					read();
+					onerror: ( error ) => {
+						console.error( error )
+					}
 				});
 			});
 		}
@@ -163,6 +167,8 @@ export default class Clip {
 			this.buffer().then( () => this.play() );
 			return this;
 		}
+
+		console.log( 'this._chunks', this._chunks )
 
 		this._fire( 'play' );
 
