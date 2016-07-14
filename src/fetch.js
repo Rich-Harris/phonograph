@@ -13,6 +13,13 @@ function _fetch ( url ) {
 			fulfil( new Response( xhr.response ) );
 		};
 
+		// TODO create separate loader class that uses *either* fetch or
+		// XHR, so that we can report progress more easily (with data in
+		// the case of fetch, without in the case of XHR)
+		xhr.onprogress = e => {
+			console.log( 'e', e )
+		};
+
 		xhr.open( 'GET', url );
 		xhr.send();
 	});
