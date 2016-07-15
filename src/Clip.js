@@ -80,6 +80,21 @@ export default class Clip {
 					}
 				};
 
+				const drainBuffer = () => {
+					const chunk = new Chunk({
+						clip: this,
+						raw: slice( tempBuffer, 0, p ),
+
+						onready: this.canplaythrough ? null : checkCanplaythrough
+					});
+
+					const lastChunk = this._chunks[ this._chunks.length - 1 ];
+					if ( lastChunk ) lastChunk.attach( chunk );
+
+					this._chunks.push( chunk );
+					p = 0;
+				};
+
 				this.loader.load({
 					onprogress: ( progress, length, total ) => {
 						this.length = total;
@@ -91,18 +106,7 @@ export default class Clip {
 							// once the buffer is large enough, wait for
 							// the next frame header then drain it
 							if ( p > CHUNK_SIZE && isFrameHeader( uint8Array, i ) ) {
-								const chunk = new Chunk({
-									clip: this,
-									raw: slice( tempBuffer, 0, p ),
-
-									onready: this.canplaythrough ? null : checkCanplaythrough
-								});
-
-								const lastChunk = this._chunks[ this._chunks.length - 1 ];
-								if ( lastChunk ) lastChunk.attach( chunk );
-
-								this._chunks.push( chunk );
-								p = 0;
+								drainBuffer();
 							}
 
 							// write new data to buffer
@@ -114,16 +118,7 @@ export default class Clip {
 
 					onload: () => {
 						if ( p ) {
-							// drain temp buffer
-							const chunk = new Chunk({
-								clip: this,
-								raw: slice( tempBuffer, 0, p ),
-
-								onready: this.canplaythrough ? null : checkCanplaythrough
-							});
-
-							this._chunks.push( chunk );
-
+							drainBuffer();
 							this._totalLoadedBytes += p;
 						}
 
