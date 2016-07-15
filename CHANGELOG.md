@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.1.2
+
+* Fix XHR loader
+
 ## 1.1.1
 
 * Prevent audible seams

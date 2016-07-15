@@ -10,10 +10,12 @@ const CHUNK_SIZE = 64 * 1024;
 const OVERLAP = 1;
 
 export default class Clip {
-	constructor ({ url }) {
+	constructor ({ url, loop, volume }) {
 		this.url = url;
 		this.callbacks = {};
 		this.context = getContext();
+
+		this.loop = loop || false;
 
 		this.length = 0;
 
@@ -27,7 +29,7 @@ export default class Clip {
 
 		this._currentTime = 0;
 
-		this._volume = 1;
+		this._volume = volume || 1;
 		this._gain = this.context.createGain();
 		this._gain.gain.value = this._volume;
 
@@ -81,9 +83,11 @@ export default class Clip {
 				};
 
 				const drainBuffer = () => {
+					const firstByte = this._chunks.length > 0 ? 0 : 32;
+
 					const chunk = new Chunk({
-						clip: this,
-						raw: slice( tempBuffer, 0, p ),
+						context: this.context,
+						raw: slice( tempBuffer, firstByte, p ),
 
 						onready: this.canplaythrough ? null : checkCanplaythrough
 					});
@@ -123,6 +127,8 @@ export default class Clip {
 							const lastChunk = drainBuffer();
 							lastChunk.attach( null );
 
+							console.log( 'this._chunks.length', this._chunks.length )
+
 							this._totalLoadedBytes += p;
 						}
 
@@ -153,10 +159,18 @@ export default class Clip {
 		return new Clone( this );
 	}
 
-	connect ( destination ) {
-		this._gain.disconnect();
-		this._gain.connect( destination );
+	connect ( destination, output, input ) {
+		if ( !this._connected ) {
+			this._gain.disconnect();
+			this._connected = true;
+		}
+
+		this._gain.connect( destination, output, input );
 		return this;
+	}
+
+	disconnect ( destination, output, input ) {
+		this._gain.disconnect( destination, output, input );
 	}
 
 	off ( eventName, cb ) {
@@ -252,21 +266,21 @@ export default class Clip {
 		this._gain.gain.value = this._volume = volume;
 	}
 
-	_decode ( view, callback, errback ) {
-		this.context.decodeAudioData( view.buffer, callback, err => {
-			if ( err ) return errback( err );
-
-			// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
-			// Thanks Safari developers, you absolute numpties
-			for ( let i = 0; i < view.length - 1; i += 1 ) {
-				if ( view[i] === 0xFF && view[i+1] & 0xE0 === 0xE0 ) {
-					return this._decode( slice( view, i, view.length ), callback, errback );
-				}
-			}
-
-			errback( new Error( 'Could not decode audio buffer' ) );
-		});
-	}
+	// _decode ( view, callback, errback ) {
+	// 	this.context.decodeAudioData( view.buffer, callback, err => {
+	// 		if ( err ) return errback( err );
+	//
+	// 		// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
+	// 		// Thanks Safari developers, you absolute numpties
+	// 		for ( let i = 0; i < view.length - 1; i += 1 ) {
+	// 			if ( view[i] === 0xFF && view[i+1] & 0xE0 === 0xE0 ) {
+	// 				return this._decode( slice( view, i, view.length ), callback, errback );
+	// 			}
+	// 		}
+	//
+	// 		errback( new Error( 'Could not decode audio buffer' ) );
+	// 	});
+	// }
 
 	_fire ( eventName, data ) {
 		const callbacks = this.callbacks[ eventName ];
@@ -337,7 +351,7 @@ export default class Clip {
 				} else {
 					requestAnimationFrame( endGame );
 				}
-			}
+			};
 
 			const advance = () => {
 				if ( !playing ) return;
@@ -366,6 +380,9 @@ export default class Clip {
 						gain.gain.setValueAtTime( 0, nextStart + OVERLAP );
 
 						tick();
+					}, err => {
+						console.log( 'chunk', chunk )
+						console.error( err );
 					});
 				} else {
 					endGame();
@@ -389,6 +406,8 @@ export default class Clip {
 
 			tick();
 			frame();
+		}, err => {
+			console.error( err );
 		});
 	}
 }
