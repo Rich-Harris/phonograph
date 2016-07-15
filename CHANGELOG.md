@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.1.1
+
+* Prevent audible seams
+
 ## 1.1.0
 
 * Implement `clip.clone()`
