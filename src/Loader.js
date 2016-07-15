@@ -57,7 +57,7 @@ if ( window.fetch ) {
 				onprogress( e.loaded / e.total, e.loaded, e.total );
 			};
 
-			xhr.open( 'GET', url );
+			xhr.open( 'GET', this.url );
 			xhr.send();
 		}
 	}
