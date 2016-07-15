@@ -93,6 +93,8 @@ export default class Clip {
 
 					this._chunks.push( chunk );
 					p = 0;
+
+					return chunk;
 				};
 
 				this.loader.load({
@@ -118,7 +120,9 @@ export default class Clip {
 
 					onload: () => {
 						if ( p ) {
-							drainBuffer();
+							const lastChunk = drainBuffer();
+							lastChunk.attach( null );
+
 							this._totalLoadedBytes += p;
 						}
 

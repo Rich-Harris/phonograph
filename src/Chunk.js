@@ -4,6 +4,11 @@ export default class Chunk {
 		this.raw = raw;
 		this.extended = raw;
 
+		this.length = null;
+		this.duration = null;
+		this.ready = false;
+		this._attached = false;
+
 		this.callback = onready;
 
 		this.length = null;
@@ -13,28 +18,30 @@ export default class Chunk {
 			this.length = decoded.length;
 			this.duration = decoded.duration;
 
-			if ( this.callback ) {
-				this.callback();
-				this.callback = null;
-			}
+			this._ready();
 		});
 	}
 
 	attach ( nextChunk ) {
-		this.next = nextChunk;
+		if ( nextChunk ) {
+			this.next = nextChunk;
 
-		const len = this.raw.length;
-		this.extended = new Uint8Array( len + ( nextChunk.raw.length >> 1 ) );
+			const len = this.raw.length;
+			this.extended = new Uint8Array( len + ( nextChunk.raw.length >> 1 ) );
 
-		let i = 0;
+			let i = 0;
 
-		for ( ; i < len; i += 1 ) {
-			this.extended[i] = this.raw[i];
+			for ( ; i < len; i += 1 ) {
+				this.extended[i] = this.raw[i];
+			}
+
+			for ( ; i < this.extended.length; i += 1 ) {
+				this.extended[i] = nextChunk.raw[ i - len ];
+			}
 		}
 
-		for ( ; i < this.extended.length; i += 1 ) {
-			this.extended[i] = nextChunk.raw[ i - len ];
-		}
+		this._attached = true;
+		this._ready();
 	}
 
 	createSource ( timeOffset, callback, errback ) {
@@ -69,6 +76,17 @@ export default class Chunk {
 			setTimeout( callback );
 		} else {
 			this.callback = callback;
+		}
+	}
+
+	_ready () {
+		if ( this._attached && this.length ) {
+			this.ready = true;
+
+			if ( this.callback ) {
+				this.callback();
+				this.callback = null;
+			}
 		}
 	}
 }
