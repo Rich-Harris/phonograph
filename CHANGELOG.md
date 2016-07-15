@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.1.0
+
+* Implement `clip.clone()`
+
 ## 1.0.1
 
 * Include files in `pkg.files`
