@@ -6,7 +6,8 @@ import { copy, slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
 
 const PROXY_DURATION = 20;
-const CHUNK_SIZE = 128 * 1024;
+const CHUNK_SIZE = 64 * 1024;
+const OVERLAP = 1;
 
 export default class Clip {
 	constructor ({ url }) {
@@ -52,7 +53,7 @@ export default class Clip {
 					for ( let chunk of this._chunks ) {
 						if ( !chunk.duration ) break;
 						duration += chunk.duration;
-						bytes += chunk.buffer.byteLength;
+						bytes += chunk.raw.length;
 					}
 
 					if ( !duration ) return;
@@ -94,8 +95,11 @@ export default class Clip {
 									clip: this,
 									raw: slice( tempBuffer, 0, p ),
 
-									ondecode: this.canplaythrough ? null : checkCanplaythrough
+									onready: this.canplaythrough ? null : checkCanplaythrough
 								});
+
+								const lastChunk = this._chunks[ this._chunks.length - 1 ];
+								if ( lastChunk ) lastChunk.attach( chunk );
 
 								this._chunks.push( chunk );
 								p = 0;
@@ -115,7 +119,7 @@ export default class Clip {
 								clip: this,
 								raw: slice( tempBuffer, 0, p ),
 
-								ondecode: this.canplaythrough ? null : checkCanplaythrough
+								onready: this.canplaythrough ? null : checkCanplaythrough
 							});
 
 							this._chunks.push( chunk );
@@ -123,15 +127,17 @@ export default class Clip {
 							this._totalLoadedBytes += p;
 						}
 
-						if ( !this.canplaythrough ) {
-							this.canplaythrough = true;
-							this._fire( 'canplaythrough' );
-						}
+						this._chunks[0].onready( () => {
+							if ( !this.canplaythrough ) {
+								this.canplaythrough = true;
+								this._fire( 'canplaythrough' );
+							}
 
-						this.loaded = true;
-						this._fire( 'load' );
+							this.loaded = true;
+							this._fire( 'load' );
 
-						fulfil();
+							fulfil();
+						});
 					},
 
 					onerror: ( error ) => {
@@ -315,11 +321,15 @@ export default class Clip {
 
 			this._contextTimeAtStart = this.context.currentTime;
 
-			source.connect( this._gain );
-			source.start();
-
 			let lastStart = this._contextTimeAtStart;
 			let nextStart = this._contextTimeAtStart + ( chunk.duration - timeOffset );
+
+			const gain = this.context.createGain();
+			gain.connect( this._gain );
+			gain.gain.setValueAtTime( 0, nextStart + OVERLAP );
+
+			source.connect( gain );
+			source.start();
 
 			const endGame = () => {
 				if ( this.context.currentTime >= nextStart ) {
@@ -343,11 +353,18 @@ export default class Clip {
 						previousSource = currentSource;
 						currentSource = source;
 
-						source.connect( this._gain );
+						const gain = this.context.createGain();
+						gain.connect( this._gain );
+						gain.gain.setValueAtTime( 0, nextStart );
+						gain.gain.setValueAtTime( 1, nextStart + OVERLAP );
+
+						source.connect( gain );
 						source.start( nextStart );
 
 						lastStart = nextStart;
 						nextStart += chunk.duration;
+
+						gain.gain.setValueAtTime( 0, nextStart + OVERLAP );
 
 						tick();
 					});

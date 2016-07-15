@@ -1,21 +1,44 @@
 export default class Chunk {
-	constructor ({ clip, raw, ondecode }) {
+	constructor ({ clip, raw, onready }) {
 		this.clip = clip;
-		this.buffer = raw.buffer;
+		this.raw = raw;
+		this.extended = raw;
+
+		this.callback = onready;
 
 		this.length = null;
 		this.duration = null;
 
-		this.decode( decoded => {
+		this.clip.context.decodeAudioData( raw.buffer, decoded => {
 			this.length = decoded.length;
 			this.duration = decoded.duration;
 
-			if ( ondecode ) ondecode();
+			if ( this.callback ) {
+				this.callback();
+				this.callback = null;
+			}
 		});
 	}
 
+	attach ( nextChunk ) {
+		this.next = nextChunk;
+
+		const len = this.raw.length;
+		this.extended = new Uint8Array( len + ( nextChunk.raw.length >> 1 ) );
+
+		let i = 0;
+
+		for ( ; i < len; i += 1 ) {
+			this.extended[i] = this.raw[i];
+		}
+
+		for ( ; i < this.extended.length; i += 1 ) {
+			this.extended[i] = nextChunk.raw[ i - len ];
+		}
+	}
+
 	createSource ( timeOffset, callback, errback ) {
-		this.decode( decoded => {
+		this.clip.context.decodeAudioData( this.extended.buffer, decoded => {
 			if ( timeOffset ) {
 				const sampleOffset = ~~( timeOffset * decoded.sampleRate );
 				const numChannels = decoded.numberOfChannels;
@@ -41,7 +64,11 @@ export default class Chunk {
 		}, errback );
 	}
 
-	decode ( callback, errback ) {
-		this.clip.context.decodeAudioData( this.buffer, callback, errback );
+	onready ( callback ) {
+		if ( this.length ) {
+			setTimeout( callback );
+		} else {
+			this.callback = callback;
+		}
 	}
 }
