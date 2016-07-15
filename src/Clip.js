@@ -1,5 +1,6 @@
 import Loader from './Loader.js';
 import Chunk from './Chunk.js';
+import Clone from './Clone.js';
 import getContext from './getContext.js';
 import { copy, slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
@@ -8,7 +9,7 @@ const PROXY_DURATION = 20;
 const CHUNK_SIZE = 128 * 1024;
 
 export default class Clip {
-	constructor ({ url, volume }) {
+	constructor ({ url }) {
 		this.url = url;
 		this.callbacks = {};
 		this.context = getContext();
@@ -25,15 +26,11 @@ export default class Clip {
 
 		this._currentTime = 0;
 
-		this._volume = volume || 1;
+		this._volume = 1;
 		this._gain = this.context.createGain();
 		this._gain.gain.value = this._volume;
 
 		this._gain.connect( this.context.destination );
-
-		this._timeIndices = [
-			{ time: 0, firstByte: 32 } // firstByte isn't zero, because we need to work around an insane Safari bug (see 'filthy hack' below)
-		];
 
 		this._chunks = [];
 	}
@@ -147,6 +144,16 @@ export default class Clip {
 		return this._promise;
 	}
 
+	clone () {
+		return new Clone( this );
+	}
+
+	connect ( destination ) {
+		this._gain.disconnect();
+		this._gain.connect( destination );
+		return this;
+	}
+
 	off ( eventName, cb ) {
 		const callbacks = this.callbacks[ eventName ];
 		if ( !callbacks ) return;
@@ -206,7 +213,7 @@ export default class Clip {
 
 	get currentTime () {
 		if ( this.playing ) {
-			return this.context.currentTime - this._startTime;
+			return this._startTime + ( this.context.currentTime - this._contextTimeAtStart );
 		} else {
 			return this._currentTime;
 		}
@@ -222,13 +229,22 @@ export default class Clip {
 		}
 	}
 
+	get duration () {
+		let total = 0;
+		for ( let chunk of this._chunks ) {
+			if ( !chunk.duration ) return null;
+			total += chunk.duration;
+		}
+
+		return total;
+	}
+
 	get volume () {
 		return this._volume;
 	}
 
 	set volume ( volume ) {
-		this._volume = volume;
-		if ( this._source ) this._gain.gain.value = volume;
+		this._gain.gain.value = this._volume = volume;
 	}
 
 	_decode ( view, callback, errback ) {
@@ -348,7 +364,15 @@ export default class Clip {
 				}
 			};
 
+			const frame = () => {
+				if ( !playing ) return;
+				requestAnimationFrame( frame );
+
+				this._fire( 'progress' );
+			};
+
 			tick();
+			frame();
 		});
 	}
 }
