@@ -1,6 +1,6 @@
 # phonograph
 
-Stream large audio files without the dreaded 'DOMException: play() can only be initiated by a user gesture' error.
+🔊 Stream large audio files without the dreaded 'DOMException: play() can only be initiated by a user gesture' error.
 
 ## The problem
 
