@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.1.4
+
+* Fix `onready` check
+
 ## 1.1.3
 
 * Remove logging
