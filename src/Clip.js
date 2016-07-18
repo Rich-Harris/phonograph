@@ -264,22 +264,6 @@ export default class Clip {
 		this._gain.gain.value = this._volume = volume;
 	}
 
-	// _decode ( view, callback, errback ) {
-	// 	this.context.decodeAudioData( view.buffer, callback, err => {
-	// 		if ( err ) return errback( err );
-	//
-	// 		// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
-	// 		// Thanks Safari developers, you absolute numpties
-	// 		for ( let i = 0; i < view.length - 1; i += 1 ) {
-	// 			if ( view[i] === 0xFF && view[i+1] & 0xE0 === 0xE0 ) {
-	// 				return this._decode( slice( view, i, view.length ), callback, errback );
-	// 			}
-	// 		}
-	//
-	// 		errback( new Error( 'Could not decode audio buffer' ) );
-	// 	});
-	// }
-
 	_fire ( eventName, data ) {
 		const callbacks = this.callbacks[ eventName ];
 		if ( !callbacks ) return;

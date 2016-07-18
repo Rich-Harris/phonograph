@@ -89,7 +89,7 @@ export default class Chunk {
 	}
 
 	onready ( callback ) {
-		if ( this._ready ) {
+		if ( this.ready ) {
 			setTimeout( callback );
 		} else {
 			this._callback = callback;
