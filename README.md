@@ -175,6 +175,7 @@ clip.on( 'ended', () => {
 * This has only so far been tested with mp3 files with a sample rate of 44.1kHz
 * It doesn't yet handle network errors particularly gracefully
 * No automated tests. I have no idea how you would test something like this.
+* Firefox doesn't want to decode mp3 files. May have to fall back to `<audio>` and `MediaElementSourceNode` in FF.
 
 
 ## License
