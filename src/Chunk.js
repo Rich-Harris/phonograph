@@ -21,7 +21,6 @@ export default class Chunk {
 		this._firstByte = 0;
 
 		const uid = count++;
-		console.log( 'decoding', uid )
 
 		const decode = ( callback, errback ) => {
 			const buffer = ( this._firstByte ? slice( raw, this._firstByte, raw.length ) : raw ).buffer;
@@ -29,6 +28,8 @@ export default class Chunk {
 			this.context.decodeAudioData( buffer, callback, err => {
 				if ( err ) console.log( 'err', err )
 				if ( err ) return errback( err );
+
+				this._firstByte += 1;
 
 				// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
 				// Thanks Safari developers, you absolute numpties
@@ -45,7 +46,6 @@ export default class Chunk {
 		};
 
 		decode( decoded => {
-			console.log( 'successfully decoded', uid );
 			this.duration = decoded.duration;
 			this._ready();
 		}, err => {
@@ -54,7 +54,7 @@ export default class Chunk {
 
 		setTimeout( () => {
 			if ( !this.ready ) {
-				console.log( 'not decoded', uid, this )
+				console.log( `not decoded ${uid} after ${retries} retries` )
 			}
 		}, 1000 );
 	}
