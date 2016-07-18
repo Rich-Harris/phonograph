@@ -127,8 +127,6 @@ export default class Clip {
 							const lastChunk = drainBuffer();
 							lastChunk.attach( null );
 
-							console.log( 'this._chunks.length', this._chunks.length )
-
 							this._totalLoadedBytes += p;
 						}
 
@@ -381,8 +379,7 @@ export default class Clip {
 
 						tick();
 					}, err => {
-						console.log( 'chunk', chunk )
-						console.error( err );
+						throw err;
 					});
 				} else {
 					endGame();

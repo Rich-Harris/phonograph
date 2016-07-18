@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.1.3
+
+* Remove logging
+
 ## 1.1.2
 
 * Fix XHR loader and Safari decoding
