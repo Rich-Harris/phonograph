@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.1.6
+
+* Init on iOS, and export `init` function
+
 ## 1.1.5
 
 * Better logging
