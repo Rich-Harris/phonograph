@@ -26,7 +26,6 @@ export default class Chunk {
 			const buffer = ( this._firstByte ? slice( raw, this._firstByte, raw.length ) : raw ).buffer;
 
 			this.context.decodeAudioData( buffer, callback, err => {
-				if ( err ) console.log( 'err', err )
 				if ( err ) return errback( err );
 
 				this._firstByte += 1;
@@ -39,8 +38,6 @@ export default class Chunk {
 					}
 				}
 
-				console.log( 'what the actual fuck' );
-
 				errback( new Error( 'Could not decode audio buffer' ) );
 			});
 		};
@@ -49,14 +46,8 @@ export default class Chunk {
 			this.duration = decoded.duration;
 			this._ready();
 		}, err => {
-			console.error( 'decoding error', err );
+			throw err;
 		});
-
-		setTimeout( () => {
-			if ( !this.ready ) {
-				console.log( `not decoded ${uid} after ${retries} retries` )
-			}
-		}, 1000 );
 	}
 
 	attach ( nextChunk ) {
@@ -68,10 +59,7 @@ export default class Chunk {
 
 	createSource ( timeOffset, callback, errback ) {
 		if ( !this.ready ) {
-			console.log( 'this', this )
-			console.log( 'this.ready', this.ready )
-			console.log( 'this.extended', this.extended )
-			throw new Error( 'Cannot create source if chunk is not ready' );
+			throw new Error( 'Something went wrong! Chunk was not ready in time for playback' );
 		}
 
 		this.context.decodeAudioData( this.extended.buffer, decoded => {

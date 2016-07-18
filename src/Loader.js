@@ -16,23 +16,38 @@ if ( window.fetch ) {
 				let length = 0;
 				onprogress( length / total, length, total );
 
-				const reader = response.body.getReader();
+				if ( response.body ) {
+					const reader = response.body.getReader();
 
-				const read = () => {
-					reader.read().then( chunk => {
-						if ( chunk.done ) {
-							onload();
-						} else {
-							length += chunk.value.length;
-							ondata( chunk.value );
-							onprogress( length / total, length, total );
+					const read = () => {
+						reader.read().then( chunk => {
+							if ( chunk.done ) {
+								onload();
+							} else {
+								length += chunk.value.length;
+								ondata( chunk.value );
+								onprogress( length / total, length, total );
 
-							read();
-						}
-					}).catch( onerror );
-				};
+								read();
+							}
+						}).catch( onerror );
+					};
 
-				read();
+					read();
+				}
+
+				else {
+					// Firefox doesn't yet implement streaming
+					response.arrayBuffer().then( arrayBuffer => {
+						const uint8Array = new Uint8Array( arrayBuffer );
+
+						ondata( uint8Array );
+						onprogress( uint8Array.length / total, uint8Array.length, total );
+						onload();
+					});
+				}
+
+
 			}).catch( onerror );
 		}
 	}

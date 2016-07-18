@@ -11,9 +11,11 @@ You've read about the Web Audio API, in particular the [AudioBuffer](https://dev
 
 ## The solution
 
-By breaking up the data into small chunks, we can use `decodeAudioData` to create a few seconds of PCM data at a time, making it very unlikely that we'll crash the browser.
+By breaking up the data into small chunks, we can use `decodeAudioData` to create a few seconds of PCM data at a time, making it very unlikely that we'll crash the browser. We can then play a short chunk, swapping it out for the next chunk (with a bit of overlap to avoid audible glitches) when ready.
 
-By using the `fetch()` API, we can stream the data rather than waiting for the whole file to load. *[That's so fetch!](https://jakearchibald.com/2015/thats-so-fetch/)* (On antiquated browsers like iOS Safari, it falls back to regular old XHR – no streaming, but we still get chunking.)
+By using the `fetch()` API, we can stream the data rather than waiting for the whole file to load. *[That's so fetch!](https://jakearchibald.com/2015/thats-so-fetch/)*
+
+(Note: in Safari and Edge, it falls back to regular old XHR – no streaming, but we still get chunking. Similarly with Firefox, which implements `fetch()` but not the streaming part. Hopefully those browsers will catch up soon.)
 
 
 ## Installation
@@ -170,7 +172,7 @@ clip.on( 'ended', () => {
 
 ## Caveats and limitations
 
-* This has only been tested with mp3 files with a sample rate of 44.1kHz
+* This has only so far been tested with mp3 files with a sample rate of 44.1kHz
 * It doesn't yet handle network errors particularly gracefully
 * No automated tests. I have no idea how you would test something like this.
 
