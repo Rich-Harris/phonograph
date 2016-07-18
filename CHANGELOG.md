@@ -1,5 +1,10 @@
 # phonograph changelog
 
+## 1.1.5
+
+* Better logging
+* Differentiate between `progress` and `loadprogress` events
+
 ## 1.1.4
 
 * Fix `onready` check
