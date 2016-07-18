@@ -4,6 +4,7 @@ import Clone from './Clone.js';
 import getContext from './getContext.js';
 import { copy, slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
+import warn from './utils/warn.js';
 
 const PROXY_DURATION = 20;
 const CHUNK_SIZE = 64 * 1024;
@@ -104,7 +105,7 @@ export default class Clip {
 				this.loader.load({
 					onprogress: ( progress, length, total ) => {
 						this.length = total;
-						this._fire( 'progress', { progress, length, total });
+						this._fire( 'loadprogress', { progress, length, total });
 					},
 
 					ondata: ( uint8Array ) => {
@@ -199,14 +200,14 @@ export default class Clip {
 
 	play () {
 		if ( this.playing ) {
-			console.warn( 'clip.play() was called on a clip that was already playing' );
+			warn( `clip.play() was called on a clip that was already playing (${this.url})` );
 			return this;
 		}
 
 		this.playing = true;
 
 		if ( !this.canplaythrough ) {
-			console.warn( 'clip.play() was called before clip.canplaythrough === true' );
+			warn( `clip.play() was called before clip.canplaythrough === true (${this.url})` );
 			this.buffer().then( () => this.play() );
 			return this;
 		}
@@ -216,7 +217,7 @@ export default class Clip {
 
 	pause () {
 		if ( !this.playing ) {
-			console.warn( 'clip.pause() was called on a clip that was already paused' );
+			warn( `clip.pause() was called on a clip that was already paused (${this.url})` );
 			return this;
 		}
 
@@ -278,7 +279,7 @@ export default class Clip {
 			const chunk = this._chunks[ chunkIndex ];
 
 			if ( !chunk.duration ) {
-				console.warn( 'attempted to play content that has not yet buffered' );
+				warn( `attempted to play content that has not yet buffered ${this.url}` );
 				setTimeout( () => {
 					this._play();
 				}, 100 );

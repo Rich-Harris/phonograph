@@ -134,7 +134,7 @@ clip.volume;
 /*          EVENTS          */
 /* ------------------------ */
 
-clip.on( 'progress', ( progress, length, total ) => {
+clip.on( 'loadprogress', ( progress, length, total ) => {
   // Fires when data is fetched. `progress` is a value
   // between 0 and 1, equal to `length / total` (both
   // measured in bytes)
@@ -157,6 +157,10 @@ clip.on( 'load', () => {
 
 clip.on( 'play', () => {
   button.textContent = 'pause';
+});
+
+clip.on( 'progress', () => {
+  playhead.style.transform = `translate(${clip.currentTime/clip.duration}%,0)`;
 });
 
 clip.on( 'pause', () => {
