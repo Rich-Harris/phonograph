@@ -2,7 +2,7 @@
 
 ## 1.1.2
 
-* Fix XHR loader
+* Fix XHR loader and Safari decoding
 
 ## 1.1.1
 
