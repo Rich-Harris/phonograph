@@ -10,7 +10,7 @@ if ( window.fetch ) {
 
 		load ({ onprogress, ondata, onload, onerror }) {
 			fetch( this.url ).then( response => {
-				const total = response.headers.get( 'content-length' );
+				const total = +response.headers.get( 'content-length' );
 				if ( !total ) throw new Error( 'missing content-length header' );
 
 				let length = 0;
