@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.1.8
+
+* Rebuild before publishing, d'oh...
+
 ## 1.1.7
 
 * Coerce `length`
