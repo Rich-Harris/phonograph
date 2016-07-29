@@ -11,7 +11,11 @@ if ( window.fetch ) {
 		load ({ onprogress, ondata, onload, onerror }) {
 			fetch( this.url ).then( response => {
 				const total = +response.headers.get( 'content-length' );
-				if ( !total ) throw new Error( 'missing content-length header' );
+
+				if ( !total ) {
+					onerror( new Error( 'missing content-length header' ) )
+					return;
+				};
 
 				let length = 0;
 				onprogress( length / total, length, total );
