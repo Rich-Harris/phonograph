@@ -4,11 +4,12 @@ import Clone from './Clone.js';
 import getContext from './getContext.js';
 import { copy, slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
+import parseMetadata from './utils/parseMetadata.js';
 import warn from './utils/warn.js';
 
 const PROXY_DURATION = 20;
 const CHUNK_SIZE = 64 * 1024;
-const OVERLAP = 1;
+const OVERLAP = 2;
 
 export default class Clip {
 	constructor ({ url, loop, volume }) {
@@ -84,11 +85,14 @@ export default class Clip {
 				};
 
 				const drainBuffer = () => {
-					const firstByte = this._chunks.length > 0 ? 0 : 32;
+					const isFirstChunk = this._chunks.length === 0;
+					const firstByte = isFirstChunk ? 0 : 0;
 
 					const chunk = new Chunk({
 						context: this.context,
 						raw: slice( tempBuffer, firstByte, p ),
+						metadata: this.metadata,
+						bits: this._bits,
 
 						onready: this.canplaythrough ? null : checkCanplaythrough
 					});
@@ -109,10 +113,30 @@ export default class Clip {
 					},
 
 					ondata: ( uint8Array ) => {
+						if ( !this.metadata ) {
+							for ( let i = 4; i < uint8Array.length; i += 1 ) {
+								// determine some facts about this mp3 file from the initial header
+								if ( uint8Array[i] === 0b11111111 && ( uint8Array[1] & 0b11110000 ) === 0b11110000 ) {
+									// http://www.datavoyage.com/mpgscript/mpeghdr.htm
+									this._bits = {
+										version: ( uint8Array[1] & 0b00001000 ),
+										layer: ( uint8Array[1] & 0b00000110 ),
+										sampleRate: ( uint8Array[2] & 0b00001100 ),
+										channelMode: ( uint8Array[3] & 0b11000000 )
+									};
+
+									this.metadata = parseMetadata( this._bits );
+									console.log( 'clip.metadata', this.metadata );
+
+									break;
+								}
+							}
+						}
+
 						for ( let i = 0; i < uint8Array.length; i += 1 ) {
 							// once the buffer is large enough, wait for
 							// the next frame header then drain it
-							if ( p > CHUNK_SIZE && isFrameHeader( uint8Array, i ) ) {
+							if ( p > CHUNK_SIZE + 4 && isFrameHeader( uint8Array, i, this._bits ) ) {
 								drainBuffer();
 							}
 
@@ -336,6 +360,11 @@ export default class Clip {
 				}
 			};
 
+			let _tmpStart = lastStart;
+			source.addEventListener( 'ended', () => {
+				console.log( `ended after ${this.context.currentTime - _tmpStart}` )
+			});
+
 			const advance = () => {
 				if ( !playing ) return;
 
@@ -356,6 +385,11 @@ export default class Clip {
 
 						source.connect( gain );
 						source.start( nextStart );
+
+						let _tmpStart = nextStart;
+						source.addEventListener( 'ended', () => {
+							console.log( `ended after ${this.context.currentTime - _tmpStart}` )
+						});
 
 						lastStart = nextStart;
 						nextStart += chunk.duration;

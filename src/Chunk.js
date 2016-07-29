@@ -1,11 +1,12 @@
 import { getContext } from './getContext.js';
 import { slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
+import parseHeader from './utils/parseHeader.js';
 
 let count = 1;
 
 export default class Chunk {
-	constructor ({ context, raw, onready }) {
+	constructor ({ context, raw, onready, metadata, bits }) {
 		this.context = context;
 		this.raw = raw;
 		this.extended = null;
@@ -19,8 +20,10 @@ export default class Chunk {
 		this.duration = null;
 
 		this._firstByte = 0;
+		this._metadata = metadata;
+		this._bits = bits;
 
-		const uid = count++;
+		this._uid = count++;
 
 		const decode = ( callback, errback ) => {
 			const buffer = ( this._firstByte ? slice( raw, this._firstByte, raw.length ) : raw ).buffer;
@@ -33,7 +36,7 @@ export default class Chunk {
 				// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
 				// Thanks Safari developers, you absolute numpties
 				for ( ; this._firstByte < raw.length - 1; this._firstByte += 1 ) {
-					if ( isFrameHeader( raw, this._firstByte ) ) {
+					if ( isFrameHeader( raw, this._firstByte, metadata ) ) {
 						return decode( callback, errback );
 					}
 				}
@@ -44,10 +47,29 @@ export default class Chunk {
 
 		decode( decoded => {
 			this.duration = decoded.duration;
+
+			// calculate duration by counting samples
+			let i = 0;
+			let parsed;
+			let numFrames = 0;
+			while ( parsed = parseHeader( this.raw, i, this._metadata, this._bits ) ) {
+				numFrames += 1;
+				i += parsed.length;
+			}
+
+			console.log( 'numFrames', numFrames )
+			const duration = numFrames * 1152 / this._metadata.sampleRate;
+			console.log( 'duration, this.duration', duration, this.duration )
+
+			this.duration = duration;
+
+
 			this._ready();
 		}, err => {
 			throw err;
 		});
+
+
 	}
 
 	attach ( nextChunk ) {
@@ -122,6 +144,53 @@ export default class Chunk {
 					slice( this.raw, this._firstByte, this.raw.length ) :
 					this.raw;
 			}
+
+			// this.frameIndices = [];
+			// this.frameSizes = [];
+			// this.frameLengths = [];
+			// // let lastFrameIndex = 0;
+			// // for ( let i = 0; i < this.extended.length; i += 1 ) {
+			// // 	if ( isFrameHeader( this.extended, i, this._bits ) ) {
+			// // 		const parsed = parseHeader( this.extended, i, this._metadata, this._bits );
+			// // 		if ( !parsed ) throw new Error( 'Could not parse' )
+			// // 		const offset = i + this._firstByte;
+			// // 		this.frameIndices.push( offset );
+			// // 		if ( i > 0 ) this.frameSizes.push( offset - lastFrameIndex );
+			// // 		lastFrameIndex = offset;
+			// // 		this.frameLengths.push( parsed.length );
+			// // 	}
+			// // }
+			//
+			// let i = 0;
+			// let parsed;
+			// while ( parsed = parseHeader( this.extended, i, this._metadata, this._bits ) ) {
+			// 	const offset = i + this._firstByte;
+			// 	this.frameIndices.push( offset );
+			// 	i += parsed.length;
+			// 	this.frameLengths.push( parsed.length );
+			// }
+			//
+			// console.group( 'ready', this._uid )
+			//
+			// console.log( 'this.frameIndices', this.frameIndices )
+			// console.log( 'this.frameLengths', this.frameLengths )
+			// // console.log( 'this.frameSizes', this.frameSizes )
+			// // console.log( 'this.frameLengths', this.frameLengths )
+			//
+			// this.numFrames = this.frameIndices.length;
+			// this.numSamples = this.numFrames * 1152;
+			//
+			// if ( !this.numFrames ) {
+			// 	console.log( 'this._firstByte', this._firstByte )
+			// 	console.log( 'this._metadata, this._bits', this._metadata, this._bits )
+			// 	console.log( 'slice(this.extended, 0, 4 )', slice(this.extended, 0, 4 ) )
+			// }
+			//
+			// console.log( 'this.numFrames', this.numFrames )
+			// console.log( 'this.duration', this.duration )
+			// console.log( 'this.numSamples / this._metadata.sampleRate', this.numSamples / this._metadata.sampleRate )
+			//
+			// console.groupEnd()
 
 			if ( this._callback ) {
 				this._callback();
