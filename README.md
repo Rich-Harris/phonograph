@@ -171,6 +171,11 @@ clip.on( 'ended', () => {
   // Clip has ended
   alert( 'that\'s all, folks!' );
 });
+
+clip.on( 'error', err => {
+  // Playback failed for some reason
+  alert( 'oh noes!' );
+});
 ```
 
 

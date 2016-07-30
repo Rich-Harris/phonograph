@@ -7,7 +7,6 @@ import isFrameHeader from './utils/isFrameHeader.js';
 import parseMetadata from './utils/parseMetadata.js';
 import warn from './utils/warn.js';
 
-const PROXY_DURATION = 20;
 const CHUNK_SIZE = 64 * 1024;
 const OVERLAP = 0.2;
 
@@ -40,7 +39,7 @@ export default class Clip {
 		this._chunks = [];
 	}
 
-	buffer ( complete ) {
+	buffer ( bufferToCompletion ) {
 		if ( !this._promise ) {
 			this._promise = new Promise( ( fulfil, reject ) => {
 				let tempBuffer = new Uint8Array( CHUNK_SIZE * 2 );
@@ -80,7 +79,7 @@ export default class Clip {
 						this.canplaythrough = true;
 						this._fire( 'canplaythrough' );
 
-						fulfil();
+						if ( !bufferToCompletion ) fulfil();
 					}
 				};
 
@@ -168,9 +167,13 @@ export default class Clip {
 					},
 
 					onerror: ( error ) => {
-						console.error( error )
+						reject( error );
 					}
 				});
+			}).catch( err => {
+				this._fire( 'error', err );
+				delete this._promise;
+				throw err;
 			});
 		}
 
@@ -387,7 +390,7 @@ export default class Clip {
 
 						tick();
 					}, err => {
-						throw err;
+						this._fire( 'error', err );
 					});
 				} else {
 					endGame();
@@ -412,7 +415,7 @@ export default class Clip {
 			tick();
 			frame();
 		}, err => {
-			console.error( err );
+			this._fire( 'error', err );
 		});
 	}
 }

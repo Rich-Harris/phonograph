@@ -13,9 +13,9 @@ if ( window.fetch ) {
 				const total = +response.headers.get( 'content-length' );
 
 				if ( !total ) {
-					onerror( new Error( 'missing content-length header' ) )
+					onerror( new Error( 'missing content-length header' ) );
 					return;
-				};
+				}
 
 				let length = 0;
 				onprogress( length / total, length, total );
@@ -55,7 +55,7 @@ if ( window.fetch ) {
 
 			}).catch( onerror );
 		}
-	}
+	};
 } else {
 	Loader = class XhrLoader {
 		constructor ( url ) {
@@ -81,7 +81,7 @@ if ( window.fetch ) {
 			xhr.open( 'GET', this.url );
 			xhr.send();
 		}
-	}
+	};
 }
 
 export default Loader;

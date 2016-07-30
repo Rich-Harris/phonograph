@@ -1,5 +1,11 @@
 # phonograph changelog
 
+## 1.2.2
+
+* Prevent infinite loop with short frame length
+* Fire `error` events
+* Linting
+
 ## 1.2.1
 
 * Ensure progress event on load

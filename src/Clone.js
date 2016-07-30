@@ -18,7 +18,7 @@ export default class Clone extends Clip {
 		return this.original.canplaythrough;
 	}
 
-	set canplaythrough ( _ ) {
+	set canplaythrough ( _ ) { // eslint-disable-line no-unused-vars
 		// noop
 	}
 
@@ -26,7 +26,7 @@ export default class Clone extends Clip {
 		return this.original.loaded;
 	}
 
-	set loaded ( _ ) {
+	set loaded ( _ ) { // eslint-disable-line no-unused-vars
 		// noop
 	}
 
@@ -34,7 +34,7 @@ export default class Clone extends Clip {
 		return this.original._chunks;
 	}
 
-	set _chunks ( _ ) {
+	set _chunks ( _ ) { // eslint-disable-line no-unused-vars
 		// noop
 	}
 }

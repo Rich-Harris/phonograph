@@ -1,4 +1,3 @@
-import { getContext } from './getContext.js';
 import { slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
 import getFrameLength from './utils/getFrameLength.js';
@@ -37,7 +36,7 @@ export default class Chunk {
 			});
 		};
 
-		decode( decoded => {
+		decode( () => {
 			let numFrames = 0;
 
 			for ( let i = this._firstByte; i < this.raw.length; i += 1 ) {
