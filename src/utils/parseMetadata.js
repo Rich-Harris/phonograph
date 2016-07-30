@@ -1,9 +1,9 @@
-const versionLookup = {
+const mpegVersionLookup = {
 	0: 2,
 	1: 1
 };
 
-const layerLookup = {
+const mpegLayerLookup = {
 	1: 3,
 	2: 2,
 	3: 1
@@ -23,11 +23,12 @@ const channelModeLookup = {
 };
 
 export default function parseMetadata ( metadata ) {
-	const version = versionLookup[ metadata.version >> 3 ];
+	const mpegVersion = mpegVersionLookup[ metadata.mpegVersion >> 3 ];
+
 	return {
-		version,
-		layer: layerLookup[ metadata.layer >> 1 ],
-		sampleRate: sampleRateLookup[ metadata.sampleRate >> 2 ] / version,
+		mpegVersion,
+		mpegLayer: mpegLayerLookup[ metadata.mpegLayer >> 1 ],
+		sampleRate: sampleRateLookup[ metadata.sampleRate >> 2 ] / mpegVersion,
 		channelMode: channelModeLookup[ metadata.channelMode >> 6 ]
 	};
 }

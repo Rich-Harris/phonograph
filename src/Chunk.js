@@ -1,12 +1,12 @@
 import { getContext } from './getContext.js';
 import { slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
-import parseHeader from './utils/parseHeader.js';
+import getFrameLength from './utils/getFrameLength.js';
 
 let count = 1;
 
 export default class Chunk {
-	constructor ({ context, raw, onready, metadata, bits }) {
+	constructor ({ context, raw, onready, metadata, referenceHeader }) {
 		this.context = context;
 		this.raw = raw;
 		this.extended = null;
@@ -21,7 +21,7 @@ export default class Chunk {
 
 		this._firstByte = 0;
 		this._metadata = metadata;
-		this._bits = bits;
+		this._referenceHeader = referenceHeader;
 
 		this._uid = count++;
 
@@ -36,7 +36,7 @@ export default class Chunk {
 				// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
 				// Thanks Safari developers, you absolute numpties
 				for ( ; this._firstByte < raw.length - 1; this._firstByte += 1 ) {
-					if ( isFrameHeader( raw, this._firstByte, this._bits ) ) {
+					if ( isFrameHeader( raw, this._firstByte, this._referenceHeader ) ) {
 						return decode( callback, errback );
 					}
 				}
@@ -47,19 +47,13 @@ export default class Chunk {
 
 		decode( decoded => {
 			let numFrames = 0;
-			let lastIndex = 0;
-			let lastFrame;
 
 			for ( let i = this._firstByte; i < this.raw.length; i += 1 ) {
-				if ( isFrameHeader( this.raw, i, this._bits ) ) {
+				if ( isFrameHeader( this.raw, i, this._referenceHeader ) ) {
 					numFrames += 1;
 
-					const frameLength = i - lastIndex;
-
-					lastFrame = parseHeader( this.raw, i, this._metadata, this._bits );
-					lastIndex = i;
-
-					i += lastFrame.length - 4;
+					const frameLength = getFrameLength( this.raw, i, this._metadata );
+					i += frameLength - 4;
 				}
 			}
 

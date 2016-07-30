@@ -92,7 +92,7 @@ export default class Clip {
 						context: this.context,
 						raw: slice( tempBuffer, firstByte, p ),
 						metadata: this.metadata,
-						bits: this._bits,
+						referenceHeader: this._referenceHeader,
 
 						onready: this.canplaythrough ? null : checkCanplaythrough
 					});
@@ -118,14 +118,14 @@ export default class Clip {
 								// determine some facts about this mp3 file from the initial header
 								if ( uint8Array[i] === 0b11111111 && ( uint8Array[ i + 1 ] & 0b11110000 ) === 0b11110000 ) {
 									// http://www.datavoyage.com/mpgscript/mpeghdr.htm
-									this._bits = {
-										version: ( uint8Array[ i + 1 ] & 0b00001000 ),
-										layer: ( uint8Array[ i + 1 ] & 0b00000110 ),
+									this._referenceHeader = {
+										mpegVersion: ( uint8Array[ i + 1 ] & 0b00001000 ),
+										mpegLayer: ( uint8Array[ i + 1 ] & 0b00000110 ),
 										sampleRate: ( uint8Array[ i + 2 ] & 0b00001100 ),
 										channelMode: ( uint8Array[ i + 3 ] & 0b11000000 )
 									};
 
-									this.metadata = parseMetadata( this._bits );
+									this.metadata = parseMetadata( this._referenceHeader );
 
 									break;
 								}
@@ -135,7 +135,7 @@ export default class Clip {
 						for ( let i = 0; i < uint8Array.length; i += 1 ) {
 							// once the buffer is large enough, wait for
 							// the next frame header then drain it
-							if ( p > CHUNK_SIZE + 4 && isFrameHeader( uint8Array, i, this._bits ) ) {
+							if ( p > CHUNK_SIZE + 4 && isFrameHeader( uint8Array, i, this._referenceHeader ) ) {
 								drainBuffer();
 							}
 

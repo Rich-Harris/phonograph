@@ -10,8 +10,8 @@ export default function isFrameHeader ( data, i, metadata ) {
 		( ( data[ i + 3 ] & 0b00000011 ) !== 0b00000010 ) &&
 
 
-		( ( data[ i + 1 ] & 0b00001000 ) === metadata.version ) &&
-		( ( data[ i + 1 ] & 0b00000110 ) === metadata.layer ) &&
+		( ( data[ i + 1 ] & 0b00001000 ) === metadata.mpegVersion ) &&
+		( ( data[ i + 1 ] & 0b00000110 ) === metadata.mpegLayer ) &&
 		( ( data[ i + 2 ] & 0b00001100 ) === metadata.sampleRate ) &&
 		( ( data[ i + 3 ] & 0b11000000 ) === metadata.channelMode )
 	);
