@@ -86,9 +86,9 @@ export default class Chunk {
 
 			console.log( `%c ${numFrames} frames`, 'font-size: 2em;' )
 			const duration = ( numFrames * 1152 / this._metadata.sampleRate );
-			console.log( 'duration, this.duration', duration, this.duration );
+			console.log( 'duration, this.duration', duration.toFixed(2), this.duration.toFixed(2) );
 
-			console.log( 'this.duration * this._metadata.sampleRate / 1152', this.duration * this._metadata.sampleRate / 1152 )
+			console.log( 'this.duration * this._metadata.sampleRate / 1152', Math.round( this.duration * this._metadata.sampleRate / 1152 ) )
 
 			this.duration = duration;
 

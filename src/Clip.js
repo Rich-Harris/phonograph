@@ -9,7 +9,7 @@ import warn from './utils/warn.js';
 
 const PROXY_DURATION = 20;
 const CHUNK_SIZE = 64 * 1024;
-const OVERLAP = 2;
+const OVERLAP = 0.2;
 
 export default class Clip {
 	constructor ({ url, loop, volume }) {
@@ -114,15 +114,15 @@ export default class Clip {
 
 					ondata: ( uint8Array ) => {
 						if ( !this.metadata ) {
-							for ( let i = 4; i < uint8Array.length; i += 1 ) {
+							for ( let i = 0; i < uint8Array.length; i += 1 ) {
 								// determine some facts about this mp3 file from the initial header
-								if ( uint8Array[i] === 0b11111111 && ( uint8Array[1] & 0b11110000 ) === 0b11110000 ) {
+								if ( uint8Array[i] === 0b11111111 && ( uint8Array[ i + 1 ] & 0b11110000 ) === 0b11110000 ) {
 									// http://www.datavoyage.com/mpgscript/mpeghdr.htm
 									this._bits = {
-										version: ( uint8Array[1] & 0b00001000 ),
-										layer: ( uint8Array[1] & 0b00000110 ),
-										sampleRate: ( uint8Array[2] & 0b00001100 ),
-										channelMode: ( uint8Array[3] & 0b11000000 )
+										version: ( uint8Array[ i + 1 ] & 0b00001000 ),
+										layer: ( uint8Array[ i + 1 ] & 0b00000110 ),
+										sampleRate: ( uint8Array[ i + 2 ] & 0b00001100 ),
+										channelMode: ( uint8Array[ i + 3 ] & 0b11000000 )
 									};
 
 									this.metadata = parseMetadata( this._bits );
