@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.2.0
+
+* VBR support
+
 ## 1.1.8
 
 * Rebuild before publishing, d'oh...
