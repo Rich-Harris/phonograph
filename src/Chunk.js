@@ -3,8 +3,6 @@ import { slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
 import getFrameLength from './utils/getFrameLength.js';
 
-let count = 1;
-
 export default class Chunk {
 	constructor ({ context, raw, onready, metadata, referenceHeader }) {
 		this.context = context;
@@ -47,7 +45,7 @@ export default class Chunk {
 					numFrames += 1;
 
 					const frameLength = getFrameLength( this.raw, i, metadata );
-					i += frameLength - 4;
+					i += frameLength - Math.min( frameLength, 4 );
 				}
 			}
 
