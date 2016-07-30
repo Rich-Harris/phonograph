@@ -26,6 +26,7 @@ if ( window.fetch ) {
 					const read = () => {
 						reader.read().then( chunk => {
 							if ( chunk.done ) {
+								onprogress( 1, length, length );
 								onload();
 							} else {
 								length += chunk.value.length;
@@ -67,7 +68,8 @@ if ( window.fetch ) {
 
 			xhr.onerror = onerror;
 
-			xhr.onload = () => {
+			xhr.onload = e => {
+				onprogress( e.loaded / e.total, e.loaded, e.total );
 				ondata( new Uint8Array( xhr.response ) );
 				onload();
 			};

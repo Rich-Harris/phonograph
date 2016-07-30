@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.2.1
+
+* Ensure progress event on load
+
 ## 1.2.0
 
 * VBR support
