@@ -2,7 +2,7 @@ import Loader from './Loader.js';
 import Chunk from './Chunk.js';
 import Clone from './Clone.js';
 import getContext from './getContext.js';
-import { copy, slice } from './utils/buffer.js';
+import { slice } from './utils/buffer.js';
 import isFrameHeader from './utils/isFrameHeader.js';
 import parseMetadata from './utils/parseMetadata.js';
 import warn from './utils/warn.js';

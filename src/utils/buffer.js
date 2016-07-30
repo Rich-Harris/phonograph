@@ -1,11 +1,3 @@
-export function copy ( source, target ) {
-	const len = Math.min( source.length, target.length );
-
-	for ( let i = 0; i < len; i += 1 ) {
-		target[i] = source[i];
-	}
-}
-
 export function slice ( view, start, end ) {
 	if ( view.slice ) {
 		return view.slice( start, end );
