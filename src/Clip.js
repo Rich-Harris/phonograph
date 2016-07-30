@@ -86,7 +86,7 @@ export default class Clip {
 
 				const drainBuffer = () => {
 					const isFirstChunk = this._chunks.length === 0;
-					const firstByte = isFirstChunk ? 0 : 0;
+					const firstByte = isFirstChunk ? 32 : 0;
 
 					const chunk = new Chunk({
 						context: this.context,

@@ -46,25 +46,55 @@ export default class Chunk {
 		};
 
 		decode( decoded => {
+			console.group( 'decoded' )
 			this.duration = decoded.duration;
 
-			// calculate duration by counting samples
-			let i = 0;
-			let parsed;
+			// // calculate duration by counting samples
+			// let i = 0;
+			// let parsed;
+			// let numFrames = 0;
+			// while ( parsed = parseHeader( this.raw, i, this._metadata, this._bits ) ) {
+			// 	numFrames += 1;
+			// 	i += parsed.length;
+			// }
+			//
+			// console.log( 'numFrames', numFrames )
+			// const duration = numFrames * 1152 / this._metadata.sampleRate;
+			// console.log( 'duration, this.duration', duration, this.duration )
+
 			let numFrames = 0;
-			while ( parsed = parseHeader( this.raw, i, this._metadata, this._bits ) ) {
-				numFrames += 1;
-				i += parsed.length;
+			let lastIndex = 0;
+			let lastFrame;
+
+			console.log( 'this._firstByte', this._firstByte )
+
+			for ( let i = this._firstByte; i < this.raw.length; i += 1 ) {
+				if ( isFrameHeader( this.raw, i, this._bits ) ) {
+					numFrames += 1;
+
+					const frameLength = i - lastIndex;
+					if ( lastFrame && frameLength !== lastFrame.length ) {
+						console.log( 'frameLength, lastFrame.length', frameLength, lastFrame.length )
+					}
+
+					lastFrame = parseHeader( this.raw, i, this._metadata, this._bits );
+					lastIndex = i;
+
+					i += lastFrame.length - 4;
+				}
 			}
 
-			console.log( 'numFrames', numFrames )
-			const duration = numFrames * 1152 / this._metadata.sampleRate;
-			console.log( 'duration, this.duration', duration, this.duration )
+			console.log( `%c ${numFrames} frames`, 'font-size: 2em;' )
+			const duration = ( numFrames * 1152 / this._metadata.sampleRate );
+			console.log( 'duration, this.duration', duration, this.duration );
+
+			console.log( 'this.duration * this._metadata.sampleRate / 1152', this.duration * this._metadata.sampleRate / 1152 )
 
 			this.duration = duration;
 
 
 			this._ready();
+			console.groupEnd()
 		}, err => {
 			throw err;
 		});
