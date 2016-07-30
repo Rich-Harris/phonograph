@@ -126,7 +126,6 @@ export default class Clip {
 									};
 
 									this.metadata = parseMetadata( this._bits );
-									console.log( 'clip.metadata', this.metadata );
 
 									break;
 								}
@@ -360,11 +359,6 @@ export default class Clip {
 				}
 			};
 
-			let _tmpStart = lastStart;
-			source.addEventListener( 'ended', () => {
-				console.log( `ended after ${this.context.currentTime - _tmpStart}` )
-			});
-
 			const advance = () => {
 				if ( !playing ) return;
 
@@ -385,11 +379,6 @@ export default class Clip {
 
 						source.connect( gain );
 						source.start( nextStart );
-
-						let _tmpStart = nextStart;
-						source.addEventListener( 'ended', () => {
-							console.log( `ended after ${this.context.currentTime - _tmpStart}` )
-						});
 
 						lastStart = nextStart;
 						nextStart += chunk.duration;
