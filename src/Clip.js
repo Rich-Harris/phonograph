@@ -24,10 +24,6 @@ export default class Clip {
 		this.loaded = false;
 		this.canplaythrough = false;
 
-		this._totalLoadedBytes = 0;
-		this._data = null;
-		this._source = null;
-
 		this._currentTime = 0;
 
 		this._volume = volume || 1;
@@ -47,6 +43,7 @@ export default class Clip {
 			let p = 0;
 
 			let loadStartTime = Date.now();
+			let totalLoadedBytes = 0;
 
 			const checkCanplaythrough = () => {
 				if ( this.canplaythrough || !this.length ) return;
@@ -68,8 +65,8 @@ export default class Clip {
 				const timeNow = Date.now();
 				const elapsed = timeNow - loadStartTime;
 
-				const bitrate = this._totalLoadedBytes / elapsed;
-				const estimatedTimeToDownload = 1.5 * ( this.length - this._totalLoadedBytes ) / bitrate / 1e3;
+				const bitrate = totalLoadedBytes / elapsed;
+				const estimatedTimeToDownload = 1.5 * ( this.length - totalLoadedBytes ) / bitrate / 1e3;
 
 				// if we have enough audio that we can start playing now
 				// and finish downloading before we run out, we've
@@ -141,7 +138,7 @@ export default class Clip {
 						tempBuffer[ p++ ] = uint8Array[i];
 					}
 
-					this._totalLoadedBytes += uint8Array.length;
+					totalLoadedBytes += uint8Array.length;
 				},
 
 				onload: () => {
@@ -149,7 +146,7 @@ export default class Clip {
 						const lastChunk = drainBuffer();
 						lastChunk.attach( null );
 
-						this._totalLoadedBytes += p;
+						totalLoadedBytes += p;
 					}
 
 					this._chunks[0].onready( () => {
@@ -209,6 +206,9 @@ export default class Clip {
 			this._loadStarted = false;
 		}
 
+		this._currentTime = 0;
+		this.loaded = false;
+		this.canplaythrough = false;
 		this._chunks = [];
 	}
 
@@ -248,11 +248,12 @@ export default class Clip {
 
 		if ( !this.canplaythrough ) {
 			warn( `clip.play() was called before clip.canplaythrough === true (${this.url})` );
-			this.buffer().then( () => this.play() );
-			return this;
+			this.buffer().then( () => this._play() );
+		} else {
+			this._play();
 		}
 
-		this._play();
+		return this;
 	}
 
 	pause () {
