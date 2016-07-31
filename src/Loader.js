@@ -4,12 +4,19 @@ if ( window.fetch ) {
 	Loader = class FetchLoader {
 		constructor ( url ) {
 			this.url = url;
+			this._cancelled = false;
 		}
 
-		// TODO cancel?
+		cancel () {
+			this._cancelled = true;
+		}
 
 		load ({ onprogress, ondata, onload, onerror }) {
+			this._cancelled = false;
+
 			fetch( this.url ).then( response => {
+				if ( this._cancelled ) return;
+
 				const total = +response.headers.get( 'content-length' );
 
 				if ( !total ) {
@@ -24,7 +31,11 @@ if ( window.fetch ) {
 					const reader = response.body.getReader();
 
 					const read = () => {
+						if ( this._cancelled ) return;
+
 						reader.read().then( chunk => {
+							if ( this._cancelled ) return;
+
 							if ( chunk.done ) {
 								onprogress( 1, length, length );
 								onload();
@@ -44,6 +55,8 @@ if ( window.fetch ) {
 				else {
 					// Firefox doesn't yet implement streaming
 					response.arrayBuffer().then( arrayBuffer => {
+						if ( this._cancelled ) return;
+
 						const uint8Array = new Uint8Array( arrayBuffer );
 
 						ondata( uint8Array );
@@ -51,8 +64,6 @@ if ( window.fetch ) {
 						onload();
 					});
 				}
-
-
 			}).catch( onerror );
 		}
 	};
@@ -60,26 +71,50 @@ if ( window.fetch ) {
 	Loader = class XhrLoader {
 		constructor ( url ) {
 			this.url = url;
+
+			this._cancelled = false;
+			this._xhr = null;
+		}
+
+		cancel () {
+			if ( this._cancelled ) return;
+
+			this._cancelled = true;
+
+			if ( this._xhr ) {
+				this._xhr.abort();
+				this._xhr = null;
+			}
 		}
 
 		load ({ onprogress, ondata, onload, onerror }) {
+			this._cancelled = false;
+
 			const xhr = new XMLHttpRequest();
 			xhr.responseType = 'arraybuffer';
 
 			xhr.onerror = onerror;
 
 			xhr.onload = e => {
+				if ( this._cancelled ) return;
+
 				onprogress( e.loaded / e.total, e.loaded, e.total );
 				ondata( new Uint8Array( xhr.response ) );
 				onload();
+
+				this._xhr = null;
 			};
 
 			xhr.onprogress = e => {
+				if ( this._cancelled ) return;
+
 				onprogress( e.loaded / e.total, e.loaded, e.total );
 			};
 
 			xhr.open( 'GET', this.url );
 			xhr.send();
+
+			this._xhr = xhr;
 		}
 	};
 }

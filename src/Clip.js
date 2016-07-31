@@ -40,144 +40,146 @@ export default class Clip {
 	}
 
 	buffer ( bufferToCompletion ) {
-		if ( !this._promise ) {
-			this._promise = new Promise( ( fulfil, reject ) => {
-				let tempBuffer = new Uint8Array( CHUNK_SIZE * 2 );
-				let p = 0;
+		if ( !this._loadStarted ) {
+			this._loadStarted = true;
 
-				let loadStartTime = Date.now();
+			let tempBuffer = new Uint8Array( CHUNK_SIZE * 2 );
+			let p = 0;
 
-				const checkCanplaythrough = () => {
-					if ( this.canplaythrough || !this.length ) return;
+			let loadStartTime = Date.now();
 
-					let duration = 0;
-					let bytes = 0;
+			const checkCanplaythrough = () => {
+				if ( this.canplaythrough || !this.length ) return;
 
-					for ( let chunk of this._chunks ) {
-						if ( !chunk.duration ) break;
-						duration += chunk.duration;
-						bytes += chunk.raw.length;
-					}
+				let duration = 0;
+				let bytes = 0;
 
-					if ( !duration ) return;
+				for ( let chunk of this._chunks ) {
+					if ( !chunk.duration ) break;
+					duration += chunk.duration;
+					bytes += chunk.raw.length;
+				}
 
-					const scale = this.length / bytes;
-					const estimatedDuration = duration * scale;
+				if ( !duration ) return;
 
-					const timeNow = Date.now();
-					const elapsed = timeNow - loadStartTime;
+				const scale = this.length / bytes;
+				const estimatedDuration = duration * scale;
 
-					const bitrate = this._totalLoadedBytes / elapsed;
-					const estimatedTimeToDownload = 1.5 * ( this.length - this._totalLoadedBytes ) / bitrate / 1e3;
+				const timeNow = Date.now();
+				const elapsed = timeNow - loadStartTime;
 
-					// if we have enough audio that we can start playing now
-					// and finish downloading before we run out, we've
-					// reached canplaythrough
-					const availableAudio = ( bytes / this.length ) * estimatedDuration;
+				const bitrate = this._totalLoadedBytes / elapsed;
+				const estimatedTimeToDownload = 1.5 * ( this.length - this._totalLoadedBytes ) / bitrate / 1e3;
 
-					if ( availableAudio > estimatedTimeToDownload ) {
-						this.canplaythrough = true;
-						this._fire( 'canplaythrough' );
+				// if we have enough audio that we can start playing now
+				// and finish downloading before we run out, we've
+				// reached canplaythrough
+				const availableAudio = ( bytes / this.length ) * estimatedDuration;
 
-						if ( !bufferToCompletion ) fulfil();
-					}
-				};
+				if ( availableAudio > estimatedTimeToDownload ) {
+					this.canplaythrough = true;
+					this._fire( 'canplaythrough' );
+				}
+			};
 
-				const drainBuffer = () => {
-					const isFirstChunk = this._chunks.length === 0;
-					const firstByte = isFirstChunk ? 32 : 0;
+			const drainBuffer = () => {
+				const isFirstChunk = this._chunks.length === 0;
+				const firstByte = isFirstChunk ? 32 : 0;
 
-					const chunk = new Chunk({
-						context: this.context,
-						raw: slice( tempBuffer, firstByte, p ),
-						metadata: this.metadata,
-						referenceHeader: this._referenceHeader,
+				const chunk = new Chunk({
+					context: this.context,
+					raw: slice( tempBuffer, firstByte, p ),
+					metadata: this.metadata,
+					referenceHeader: this._referenceHeader,
 
-						onready: this.canplaythrough ? null : checkCanplaythrough
-					});
-
-					const lastChunk = this._chunks[ this._chunks.length - 1 ];
-					if ( lastChunk ) lastChunk.attach( chunk );
-
-					this._chunks.push( chunk );
-					p = 0;
-
-					return chunk;
-				};
-
-				this.loader.load({
-					onprogress: ( progress, length, total ) => {
-						this.length = total;
-						this._fire( 'loadprogress', { progress, length, total });
-					},
-
-					ondata: ( uint8Array ) => {
-						if ( !this.metadata ) {
-							for ( let i = 0; i < uint8Array.length; i += 1 ) {
-								// determine some facts about this mp3 file from the initial header
-								if ( uint8Array[i] === 0b11111111 && ( uint8Array[ i + 1 ] & 0b11110000 ) === 0b11110000 ) {
-									// http://www.datavoyage.com/mpgscript/mpeghdr.htm
-									this._referenceHeader = {
-										mpegVersion: ( uint8Array[ i + 1 ] & 0b00001000 ),
-										mpegLayer: ( uint8Array[ i + 1 ] & 0b00000110 ),
-										sampleRate: ( uint8Array[ i + 2 ] & 0b00001100 ),
-										channelMode: ( uint8Array[ i + 3 ] & 0b11000000 )
-									};
-
-									this.metadata = parseMetadata( this._referenceHeader );
-
-									break;
-								}
-							}
-						}
-
-						for ( let i = 0; i < uint8Array.length; i += 1 ) {
-							// once the buffer is large enough, wait for
-							// the next frame header then drain it
-							if ( p > CHUNK_SIZE + 4 && isFrameHeader( uint8Array, i, this._referenceHeader ) ) {
-								drainBuffer();
-							}
-
-							// write new data to buffer
-							tempBuffer[ p++ ] = uint8Array[i];
-						}
-
-						this._totalLoadedBytes += uint8Array.length;
-					},
-
-					onload: () => {
-						if ( p ) {
-							const lastChunk = drainBuffer();
-							lastChunk.attach( null );
-
-							this._totalLoadedBytes += p;
-						}
-
-						this._chunks[0].onready( () => {
-							if ( !this.canplaythrough ) {
-								this.canplaythrough = true;
-								this._fire( 'canplaythrough' );
-							}
-
-							this.loaded = true;
-							this._fire( 'load' );
-
-							fulfil();
-						});
-					},
-
-					onerror: ( error ) => {
-						reject( error );
-					}
+					onready: this.canplaythrough ? null : checkCanplaythrough
 				});
-			}).catch( err => {
-				this._fire( 'error', err );
-				delete this._promise;
-				throw err;
+
+				const lastChunk = this._chunks[ this._chunks.length - 1 ];
+				if ( lastChunk ) lastChunk.attach( chunk );
+
+				this._chunks.push( chunk );
+				p = 0;
+
+				return chunk;
+			};
+
+			this.loader.load({
+				onprogress: ( progress, length, total ) => {
+					this.length = total;
+					this._fire( 'loadprogress', { progress, length, total });
+				},
+
+				ondata: ( uint8Array ) => {
+					if ( !this.metadata ) {
+						for ( let i = 0; i < uint8Array.length; i += 1 ) {
+							// determine some facts about this mp3 file from the initial header
+							if ( uint8Array[i] === 0b11111111 && ( uint8Array[ i + 1 ] & 0b11110000 ) === 0b11110000 ) {
+								// http://www.datavoyage.com/mpgscript/mpeghdr.htm
+								this._referenceHeader = {
+									mpegVersion: ( uint8Array[ i + 1 ] & 0b00001000 ),
+									mpegLayer: ( uint8Array[ i + 1 ] & 0b00000110 ),
+									sampleRate: ( uint8Array[ i + 2 ] & 0b00001100 ),
+									channelMode: ( uint8Array[ i + 3 ] & 0b11000000 )
+								};
+
+								this.metadata = parseMetadata( this._referenceHeader );
+
+								break;
+							}
+						}
+					}
+
+					for ( let i = 0; i < uint8Array.length; i += 1 ) {
+						// once the buffer is large enough, wait for
+						// the next frame header then drain it
+						if ( p > CHUNK_SIZE + 4 && isFrameHeader( uint8Array, i, this._referenceHeader ) ) {
+							drainBuffer();
+						}
+
+						// write new data to buffer
+						tempBuffer[ p++ ] = uint8Array[i];
+					}
+
+					this._totalLoadedBytes += uint8Array.length;
+				},
+
+				onload: () => {
+					if ( p ) {
+						const lastChunk = drainBuffer();
+						lastChunk.attach( null );
+
+						this._totalLoadedBytes += p;
+					}
+
+					this._chunks[0].onready( () => {
+						if ( !this.canplaythrough ) {
+							this.canplaythrough = true;
+							this._fire( 'canplaythrough' );
+						}
+
+						this.loaded = true;
+						this._fire( 'load' );
+					});
+				},
+
+				onerror: ( error ) => {
+					this._fire( 'loaderror', error );
+					this._loadStarted = false;
+				}
 			});
 		}
 
-		return this._promise;
+		return new Promise( ( fulfil, reject ) => {
+			const ready = bufferToCompletion ? this.loaded : this.canplaythrough;
+
+			if ( ready ) {
+				fulfil();
+			} else {
+				this.once( bufferToCompletion ? 'load' : 'canplaythrough', fulfil );
+				this.once( 'loaderror', reject );
+			}
+		});
 	}
 
 	clone () {
@@ -196,6 +198,18 @@ export default class Clip {
 
 	disconnect ( destination, output, input ) {
 		this._gain.disconnect( destination, output, input );
+	}
+
+	dispose () {
+		if ( this.playing ) this.pause();
+
+		if ( this._loadStarted ) {
+			// TODO... how to cancel?
+			this.loader.cancel();
+			this._loadStarted = false;
+		}
+
+		this._chunks = [];
 	}
 
 	off ( eventName, cb ) {
@@ -390,7 +404,7 @@ export default class Clip {
 
 						tick();
 					}, err => {
-						this._fire( 'error', err );
+						this._fire( 'playbackerror', err );
 					});
 				} else {
 					endGame();
@@ -415,7 +429,7 @@ export default class Clip {
 			tick();
 			frame();
 		}, err => {
-			this._fire( 'error', err );
+			this._fire( 'playbackerror', err );
 		});
 	}
 }
