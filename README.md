@@ -103,6 +103,9 @@ clip.play();
 clip.pause();
 // Stops playing the clip
 
+clip.dispose();
+// Unloads the clip, freeing up memory
+
 
 /* ------------------------ */
 /*        PROPERTIES        */
@@ -168,13 +171,15 @@ clip.on( 'pause', () => {
 });
 
 clip.on( 'ended', () => {
-  // Clip has ended
   alert( 'that\'s all, folks!' );
 });
 
-clip.on( 'error', err => {
-  // Playback failed for some reason
-  alert( 'oh noes!' );
+clip.on( 'loaderror', err => {
+  alert( 'Clip failed to load' );
+});
+
+clip.on( 'playbackerror', err => {
+  alert( 'Something went wrong during playback' );
 });
 ```
 

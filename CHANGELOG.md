@@ -1,5 +1,12 @@
 # phonograph changelog
 
+## 1.3.0
+
+* Implement `clip.dispose()`
+* Allow multiple load attempts
+* Create new promise for each `buffer()` attempt
+* Distinguish between `loaderror` and `playbackerror`
+
 ## 1.2.2
 
 * Prevent infinite loop with short frame length
