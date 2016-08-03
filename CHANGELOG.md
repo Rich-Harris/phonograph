@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.3.1
+
+* Add `buffered` property
+
 ## 1.3.0
 
 * Implement `clip.dispose()`

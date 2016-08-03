@@ -111,6 +111,9 @@ clip.dispose();
 /*        PROPERTIES        */
 /* ------------------------ */
 
+clip.buffered;
+// How many bytes have been buffered
+
 clip.canplaythrough;
 // Whether or not Phonograph estimates that the clip can be played
 // all the way through (i.e. all the data will download before the
@@ -122,6 +125,9 @@ clip.currentTime;
 clip.duration;
 // Duration of the audio, in seconds. Returns `null` if the
 // clip has not yet loaded. Read-only
+
+clip.length;
+// The size of the clip in bytes
 
 clip.loaded;
 // Whether the clip has finished fetching data

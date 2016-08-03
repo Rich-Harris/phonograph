@@ -18,6 +18,7 @@ export default class Clip {
 
 		this.loop = loop || false;
 
+		this.buffered = 0;
 		this.length = 0;
 
 		this.loader = new Loader( url );
@@ -103,6 +104,7 @@ export default class Clip {
 
 			this.loader.load({
 				onprogress: ( progress, length, total ) => {
+					this.buffered = length;
 					this.length = total;
 					this._fire( 'loadprogress', { progress, length, total });
 				},
