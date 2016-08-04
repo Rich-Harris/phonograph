@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.3.5
+
+* Always specify start time when starting a source
+
 ## 1.3.4
 
 * Use `error.phonographCode` instead of `error.code`, to avoid writing to read-only properties
