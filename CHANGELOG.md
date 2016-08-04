@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.3.2
+
+* Don't error if content-length is missing
+
 ## 1.3.1
 
 * Add `buffered` property

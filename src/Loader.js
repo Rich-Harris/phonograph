@@ -17,15 +17,10 @@ if ( window.fetch ) {
 			fetch( this.url ).then( response => {
 				if ( this._cancelled ) return;
 
-				const total = +response.headers.get( 'content-length' );
-
-				if ( !total ) {
-					onerror( new Error( 'missing content-length header' ) );
-					return;
-				}
+				const total = +response.headers.get( 'content-length' ) || 0;
 
 				let length = 0;
-				onprogress( length / total, length, total );
+				onprogress( ( total ? length : 0 ) / total, length, total );
 
 				if ( response.body ) {
 					const reader = response.body.getReader();
@@ -42,7 +37,7 @@ if ( window.fetch ) {
 							} else {
 								length += chunk.value.length;
 								ondata( chunk.value );
-								onprogress( length / total, length, total );
+								onprogress( ( total ? length : 0 ) / total, length, total );
 
 								read();
 							}
@@ -60,7 +55,7 @@ if ( window.fetch ) {
 						const uint8Array = new Uint8Array( arrayBuffer );
 
 						ondata( uint8Array );
-						onprogress( uint8Array.length / total, uint8Array.length, total );
+						onprogress( 1, uint8Array.length, uint8Array.length );
 						onload();
 					});
 				}
