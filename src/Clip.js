@@ -371,7 +371,7 @@ export default class Clip {
 			gain.gain.setValueAtTime( 0, nextStart + OVERLAP );
 
 			source.connect( gain );
-			source.start();
+			source.start( this.context.currentTime );
 
 			const endGame = () => {
 				if ( this.context.currentTime >= nextStart ) {

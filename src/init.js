@@ -16,7 +16,7 @@ export default function init () {
 	source.buffer = buffer;
 	source.connect( context.destination );
 
-	source.start();
+	source.start( context.currentTime );
 
 	setTimeout( () => {
 		if ( !inited ) {
