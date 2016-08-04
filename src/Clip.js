@@ -90,7 +90,7 @@ export default class Clip {
 					onready: this.canplaythrough ? null : checkCanplaythrough,
 					onerror: err => {
 						err.url = this.url;
-						err.code = 'COULD_NOT_DECODE';
+						err.phonographCode = 'COULD_NOT_DECODE';
 						this._fire( 'loaderror', err );
 					}
 				});
@@ -166,7 +166,7 @@ export default class Clip {
 
 				onerror: ( error ) => {
 					error.url = this.url;
-					error.code = 'COULD_NOT_LOAD';
+					error.phonographCode = 'COULD_NOT_LOAD';
 					this._fire( 'loaderror', error );
 					this._loadStarted = false;
 				}
@@ -411,7 +411,7 @@ export default class Clip {
 						tick();
 					}, err => {
 						err.url = this.url;
-						err.code = 'COULD_NOT_CREATE_SOURCE';
+						err.phonographCode = 'COULD_NOT_CREATE_SOURCE';
 						this._fire( 'playbackerror', err );
 					});
 				} else {
@@ -438,7 +438,7 @@ export default class Clip {
 			frame();
 		}, err => {
 			err.url = this.url;
-			err.code = 'COULD_NOT_START_PLAYBACK';
+			err.phonographCode = 'COULD_NOT_START_PLAYBACK';
 			this._fire( 'playbackerror', err );
 		});
 	}
