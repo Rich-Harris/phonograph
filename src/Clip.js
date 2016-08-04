@@ -85,12 +85,14 @@ export default class Clip {
 				const firstByte = isFirstChunk ? 32 : 0;
 
 				const chunk = new Chunk({
-					context: this.context,
+					clip: this,
 					raw: slice( tempBuffer, firstByte, p ),
-					metadata: this.metadata,
-					referenceHeader: this._referenceHeader,
-
-					onready: this.canplaythrough ? null : checkCanplaythrough
+					onready: this.canplaythrough ? null : checkCanplaythrough,
+					onerror: err => {
+						err.url = this.url;
+						err.code = 'COULD_NOT_DECODE';
+						this._fire( 'loaderror', err );
+					}
 				});
 
 				const lastChunk = this._chunks[ this._chunks.length - 1 ];
@@ -163,6 +165,8 @@ export default class Clip {
 				},
 
 				onerror: ( error ) => {
+					error.url = this.url;
+					error.code = 'COULD_NOT_LOAD';
 					this._fire( 'loaderror', error );
 					this._loadStarted = false;
 				}
@@ -203,7 +207,6 @@ export default class Clip {
 		if ( this.playing ) this.pause();
 
 		if ( this._loadStarted ) {
-			// TODO... how to cancel?
 			this.loader.cancel();
 			this._loadStarted = false;
 		}
@@ -232,8 +235,8 @@ export default class Clip {
 	}
 
 	once ( eventName, cb ) {
-		const _cb = () => {
-			cb();
+		const _cb = ( data ) => {
+			cb( data );
 			this.off( eventName, _cb );
 		};
 
@@ -312,7 +315,7 @@ export default class Clip {
 		const callbacks = this.callbacks[ eventName ];
 		if ( !callbacks ) return;
 
-		callbacks.forEach( cb => cb( data ) );
+		callbacks.slice().forEach( cb => cb( data ) );
 	}
 
 	_play () {
@@ -407,6 +410,8 @@ export default class Clip {
 
 						tick();
 					}, err => {
+						err.url = this.url;
+						err.code = 'COULD_NOT_CREATE_SOURCE';
 						this._fire( 'playbackerror', err );
 					});
 				} else {
@@ -432,6 +437,8 @@ export default class Clip {
 			tick();
 			frame();
 		}, err => {
+			err.url = this.url;
+			err.code = 'COULD_NOT_START_PLAYBACK';
 			this._fire( 'playbackerror', err );
 		});
 	}

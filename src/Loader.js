@@ -57,7 +57,7 @@ if ( window.fetch ) {
 						ondata( uint8Array );
 						onprogress( 1, uint8Array.length, uint8Array.length );
 						onload();
-					});
+					}).catch( onerror );
 				}
 			}).catch( onerror );
 		}

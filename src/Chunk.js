@@ -3,8 +3,10 @@ import isFrameHeader from './utils/isFrameHeader.js';
 import getFrameLength from './utils/getFrameLength.js';
 
 export default class Chunk {
-	constructor ({ context, raw, onready, metadata, referenceHeader }) {
-		this.context = context;
+	constructor ({ clip, raw, onready, onerror }) {
+		this.clip = clip;
+		this.context = clip.context;
+
 		this.raw = raw;
 		this.extended = null;
 
@@ -27,12 +29,12 @@ export default class Chunk {
 				// filthy hack taken from http://stackoverflow.com/questions/10365335/decodeaudiodata-returning-a-null-error
 				// Thanks Safari developers, you absolute numpties
 				for ( ; this._firstByte < raw.length - 1; this._firstByte += 1 ) {
-					if ( isFrameHeader( raw, this._firstByte, referenceHeader ) ) {
+					if ( isFrameHeader( raw, this._firstByte, clip._referenceHeader ) ) {
 						return decode( callback, errback );
 					}
 				}
 
-				errback( new Error( 'Could not decode audio buffer' ) );
+				errback( new Error( `Could not decode audio buffer` ) );
 			});
 		};
 
@@ -40,19 +42,17 @@ export default class Chunk {
 			let numFrames = 0;
 
 			for ( let i = this._firstByte; i < this.raw.length; i += 1 ) {
-				if ( isFrameHeader( this.raw, i, referenceHeader ) ) {
+				if ( isFrameHeader( this.raw, i, clip._referenceHeader ) ) {
 					numFrames += 1;
 
-					const frameLength = getFrameLength( this.raw, i, metadata );
+					const frameLength = getFrameLength( this.raw, i, clip.metadata );
 					i += frameLength - Math.min( frameLength, 4 );
 				}
 			}
 
-			this.duration = ( numFrames * 1152 / metadata.sampleRate );
+			this.duration = ( numFrames * 1152 / clip.metadata.sampleRate );
 			this._ready();
-		}, err => {
-			throw err;
-		});
+		}, onerror );
 	}
 
 	attach ( nextChunk ) {
