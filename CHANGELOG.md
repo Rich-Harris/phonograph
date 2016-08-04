@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.3.6
+
+* Gah npm
+
 ## 1.3.5
 
 * Always specify start time when starting a source

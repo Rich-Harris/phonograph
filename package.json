@@ -1,7 +1,7 @@
 {
   "name": "phonograph",
   "description": "Play audio files without the dreaded 'DOMException: play() can only be initiated by a user gesture' error.",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "main": "dist/phonograph.umd.js",
   "jsnext:main": "dist/phonograph.es.js",
   "files": [
