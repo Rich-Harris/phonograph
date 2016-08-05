@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.3.7
+
+* Handle non-200 responses
+
 ## 1.3.6
 
 * Gah npm

@@ -17,6 +17,11 @@ if ( window.fetch ) {
 			fetch( this.url ).then( response => {
 				if ( this._cancelled ) return;
 
+				if ( !response.ok ) {
+					onerror( new Error( `Bad response (${response.status} – ${response.statusText})` ) );
+					return;
+				}
+
 				const total = +response.headers.get( 'content-length' ) || 0;
 
 				let length = 0;
