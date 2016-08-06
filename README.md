@@ -129,6 +129,9 @@ clip.duration;
 // Duration of the audio, in seconds. Returns `null` if the
 // clip has not yet loaded. Read-only
 
+clip.ended;
+// Whether or not the clip has ended following the most recent play()
+
 clip.length;
 // The size of the clip in bytes
 
