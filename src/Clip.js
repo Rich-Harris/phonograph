@@ -215,6 +215,8 @@ export default class Clip {
 		this.loaded = false;
 		this.canplaythrough = false;
 		this._chunks = [];
+
+		this._fire( 'dispose' );
 	}
 
 	off ( eventName, cb ) {
@@ -244,21 +246,22 @@ export default class Clip {
 	}
 
 	play () {
+		const promise = new Promise( ( fulfil, reject ) => {
+			this.once( 'ended', fulfil );
+			this.once( 'dispose', reject );
+		});
+
 		if ( this.playing ) {
 			warn( `clip.play() was called on a clip that was already playing (${this.url})` );
-			return this;
-		}
-
-		this.playing = true;
-
-		if ( !this.canplaythrough ) {
+		} else if ( !this.canplaythrough ) {
 			warn( `clip.play() was called before clip.canplaythrough === true (${this.url})` );
 			this.buffer().then( () => this._play() );
 		} else {
 			this._play();
 		}
 
-		return this;
+		this.playing = true;
+		return promise;
 	}
 
 	pause () {
