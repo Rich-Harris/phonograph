@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.4.0
+
+* Return a promise from `clip.play()`
+
 ## 1.3.7
 
 * Handle non-200 responses

@@ -98,7 +98,9 @@ listener = clip.once( eventName, callback );
 // Listen for an event, but stop listening once it's happened
 
 clip.play();
-// Starts playing the clip
+// Starts playing the clip. Returns a promise that resolves
+// once the clip has finished playing (for a looping clip,
+// this is never!) or rejects on clip.dispose()
 
 clip.pause();
 // Stops playing the clip
