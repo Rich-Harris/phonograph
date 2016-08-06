@@ -247,18 +247,13 @@ export default class Clip {
 
 	play () {
 		const promise = new Promise( ( fulfil, reject ) => {
-			let ended = false;
-
-			this.once( 'ended', () => {
-				ended = true;
-				fulfil();
-			});
+			this.once( 'ended', fulfil );
 
 			this.once( 'loaderror', reject );
 			this.once( 'playbackerror', reject );
 
 			this.once( 'dispose', () => {
-				if ( ended ) return;
+				if ( this.ended ) return;
 
 				const err = new Error( 'Clip was disposed' );
 				err.phonographCode = 'CLIP_WAS_DISPOSED';
@@ -277,6 +272,8 @@ export default class Clip {
 		}
 
 		this.playing = true;
+		this.ended = false;
+
 		return promise;
 	}
 
@@ -395,6 +392,7 @@ export default class Clip {
 			const endGame = () => {
 				if ( this.context.currentTime >= nextStart ) {
 					this.pause()._currentTime = 0;
+					this.ended = true;
 					this._fire( 'ended' );
 				} else {
 					requestAnimationFrame( endGame );
