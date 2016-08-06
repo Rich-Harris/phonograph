@@ -100,7 +100,8 @@ listener = clip.once( eventName, callback );
 clip.play();
 // Starts playing the clip. Returns a promise that resolves
 // once the clip has finished playing (for a looping clip,
-// this is never!) or rejects on clip.dispose()
+// this is never!) or rejects on clip.dispose() or if
+// there's a load/playback error
 
 clip.pause();
 // Stops playing the clip

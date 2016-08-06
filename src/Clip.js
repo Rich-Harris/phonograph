@@ -249,6 +249,8 @@ export default class Clip {
 		const promise = new Promise( ( fulfil, reject ) => {
 			this.once( 'ended', fulfil );
 			this.once( 'dispose', reject );
+			this.once( 'loaderror', reject );
+			this.once( 'playbackerror', reject );
 		});
 
 		if ( this.playing ) {

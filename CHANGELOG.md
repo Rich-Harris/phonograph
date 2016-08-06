@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.4.1
+
+* Reject play promise on load/playback error
+
 ## 1.4.0
 
 * Return a promise from `clip.play()`
