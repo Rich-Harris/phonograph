@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.4.2
+
+* Prevent `clip.dispose()` from causing `clip.play()` promise rejection if called in `ended` handler
+
 ## 1.4.1
 
 * Reject play promise on load/playback error
