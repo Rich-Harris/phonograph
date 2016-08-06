@@ -247,10 +247,24 @@ export default class Clip {
 
 	play () {
 		const promise = new Promise( ( fulfil, reject ) => {
-			this.once( 'ended', fulfil );
-			this.once( 'dispose', reject );
+			let ended = false;
+
+			this.once( 'ended', () => {
+				ended = true;
+				fulfil();
+			});
+
 			this.once( 'loaderror', reject );
 			this.once( 'playbackerror', reject );
+
+			this.once( 'dispose', () => {
+				if ( ended ) return;
+
+				const err = new Error( 'Clip was disposed' );
+				err.phonographCode = 'CLIP_WAS_DISPOSED';
+				err.url = this.url;
+				reject( err );
+			});
 		});
 
 		if ( this.playing ) {
