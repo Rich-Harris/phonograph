@@ -98,7 +98,10 @@ listener = clip.once( eventName, callback );
 // Listen for an event, but stop listening once it's happened
 
 clip.play();
-// Starts playing the clip
+// Starts playing the clip. Returns a promise that resolves
+// once the clip has finished playing (for a looping clip,
+// this is never!) or rejects on clip.dispose() or if
+// there's a load/playback error
 
 clip.pause();
 // Stops playing the clip
@@ -125,6 +128,9 @@ clip.currentTime;
 clip.duration;
 // Duration of the audio, in seconds. Returns `null` if the
 // clip has not yet loaded. Read-only
+
+clip.ended;
+// Whether or not the clip has ended following the most recent play()
 
 clip.length;
 // The size of the clip in bytes

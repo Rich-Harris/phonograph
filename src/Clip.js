@@ -215,6 +215,8 @@ export default class Clip {
 		this.loaded = false;
 		this.canplaythrough = false;
 		this._chunks = [];
+
+		this._fire( 'dispose' );
 	}
 
 	off ( eventName, cb ) {
@@ -244,21 +246,35 @@ export default class Clip {
 	}
 
 	play () {
+		const promise = new Promise( ( fulfil, reject ) => {
+			this.once( 'ended', fulfil );
+
+			this.once( 'loaderror', reject );
+			this.once( 'playbackerror', reject );
+
+			this.once( 'dispose', () => {
+				if ( this.ended ) return;
+
+				const err = new Error( 'Clip was disposed' );
+				err.phonographCode = 'CLIP_WAS_DISPOSED';
+				err.url = this.url;
+				reject( err );
+			});
+		});
+
 		if ( this.playing ) {
 			warn( `clip.play() was called on a clip that was already playing (${this.url})` );
-			return this;
-		}
-
-		this.playing = true;
-
-		if ( !this.canplaythrough ) {
+		} else if ( !this.canplaythrough ) {
 			warn( `clip.play() was called before clip.canplaythrough === true (${this.url})` );
 			this.buffer().then( () => this._play() );
 		} else {
 			this._play();
 		}
 
-		return this;
+		this.playing = true;
+		this.ended = false;
+
+		return promise;
 	}
 
 	pause () {
@@ -376,6 +392,7 @@ export default class Clip {
 			const endGame = () => {
 				if ( this.context.currentTime >= nextStart ) {
 					this.pause()._currentTime = 0;
+					this.ended = true;
 					this._fire( 'ended' );
 				} else {
 					requestAnimationFrame( endGame );
