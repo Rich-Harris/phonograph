@@ -2,6 +2,8 @@
 
 🔊 Stream large audio files without the dreaded 'DOMException: play() can only be initiated by a user gesture' error.
 
+Read [Phonograph.js: Tolerable mobile web audio](https://medium.com/@Rich_Harris/phonograph-js-tolerable-mobile-web-audio-55286bd5e567#.9rjf2k10x) for more background.
+
 ## The problem
 
 You want to play some audio in your web app, but you don't want to use an `<audio>` element because mobile browser makers – in their infinite wisdom – have decided that playback must be initiated by a 'user gesture'.
