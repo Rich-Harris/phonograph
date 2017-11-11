@@ -1,16 +1,17 @@
 import buble from 'rollup-plugin-buble';
+import pkg from './package.json';
 
 export default {
-	entry: 'src/index.js',
+	input: 'src/index.js',
+	output: [
+		{ file: pkg.module, format: 'es' },
+		{ file: pkg.main, format: 'umd' }
+	],
+	name: 'Phonograph',
+	sourcemap: true,
 	plugins: [
 		buble({
 			transforms: { dangerousForOf: true }
 		})
-	],
-	moduleName: 'Phonograph',
-	sourceMap: true,
-	targets: [
-		{ dest: 'dist/phonograph.es.js', format: 'es' },
-		{ dest: 'dist/phonograph.umd.js', format: 'umd' }
 	]
 };
