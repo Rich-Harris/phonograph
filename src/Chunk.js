@@ -19,7 +19,7 @@ export default class Chunk {
 		this._firstByte = 0;
 
 		const decode = ( callback, errback ) => {
-			const buffer = ( this._firstByte ? slice( raw, this._firstByte, raw.length ) : raw ).buffer;
+			const buffer = slice( raw, this._firstByte, raw.length ).buffer;
 
 			this.context.decodeAudioData( buffer, callback, err => {
 				if ( err ) return errback( err );

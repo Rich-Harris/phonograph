@@ -28,12 +28,15 @@
   "devDependencies": {
     "eslint": "^3.2.0",
     "rollup": "^0.34.1",
-    "rollup-plugin-buble": "^0.12.1"
+    "rollup-plugin-buble": "^0.12.1",
+    "serve": "^6.4.1"
   },
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "prepublish": "npm run lint && npm run build",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "serve . & open http://localhost:5000/test.html",
+    "pretest": "npm run build"
   }
 }
