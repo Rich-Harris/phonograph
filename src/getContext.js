@@ -1,5 +1,8 @@
 let context;
 
-export default function getContext () {
-	return context || ( context = new ( window.AudioContext || window.webkitAudioContext )() );
+export default function getContext() {
+	return (
+		context ||
+		(context = new (window.AudioContext || window.webkitAudioContext)())
+	);
 }

@@ -1,93 +1,103 @@
 let Loader;
 
-if ( window.fetch ) {
+if (window.fetch) {
 	Loader = class FetchLoader {
-		constructor ( url ) {
+		constructor(url) {
 			this.url = url;
 			this._cancelled = false;
 		}
 
-		cancel () {
+		cancel() {
 			this._cancelled = true;
 		}
 
-		load ({ onprogress, ondata, onload, onerror }) {
+		load({ onprogress, ondata, onload, onerror }) {
 			this._cancelled = false;
 
-			fetch( this.url ).then( response => {
-				if ( this._cancelled ) return;
+			fetch(this.url)
+				.then(response => {
+					if (this._cancelled) return;
 
-				if ( !response.ok ) {
-					onerror( new Error( `Bad response (${response.status} – ${response.statusText})` ) );
-					return;
-				}
+					if (!response.ok) {
+						onerror(
+							new Error(
+								`Bad response (${response.status} – ${response.statusText})`
+							)
+						);
+						return;
+					}
 
-				const total = +response.headers.get( 'content-length' ) || 0;
+					const total = +response.headers.get('content-length') || 0;
 
-				let length = 0;
-				onprogress( ( total ? length : 0 ) / total, length, total );
+					let length = 0;
+					onprogress((total ? length : 0) / total, length, total);
 
-				if ( response.body ) {
-					const reader = response.body.getReader();
+					if (response.body) {
+						const reader = response.body.getReader();
 
-					const read = () => {
-						if ( this._cancelled ) return;
+						const read = () => {
+							if (this._cancelled) return;
 
-						reader.read().then( chunk => {
-							if ( this._cancelled ) return;
+							reader
+								.read()
+								.then(chunk => {
+									if (this._cancelled) return;
 
-							if ( chunk.done ) {
-								onprogress( 1, length, length );
+									if (chunk.done) {
+										onprogress(1, length, length);
+										onload();
+									} else {
+										length += chunk.value.length;
+										ondata(chunk.value);
+										onprogress((total ? length : 0) / total, length, total);
+
+										read();
+									}
+								})
+								.catch(onerror);
+						};
+
+						read();
+					} else {
+						// Firefox doesn't yet implement streaming
+						response
+							.arrayBuffer()
+							.then(arrayBuffer => {
+								if (this._cancelled) return;
+
+								const uint8Array = new Uint8Array(arrayBuffer);
+
+								ondata(uint8Array);
+								onprogress(1, uint8Array.length, uint8Array.length);
 								onload();
-							} else {
-								length += chunk.value.length;
-								ondata( chunk.value );
-								onprogress( ( total ? length : 0 ) / total, length, total );
-
-								read();
-							}
-						}).catch( onerror );
-					};
-
-					read();
-				}
-
-				else {
-					// Firefox doesn't yet implement streaming
-					response.arrayBuffer().then( arrayBuffer => {
-						if ( this._cancelled ) return;
-
-						const uint8Array = new Uint8Array( arrayBuffer );
-
-						ondata( uint8Array );
-						onprogress( 1, uint8Array.length, uint8Array.length );
-						onload();
-					}).catch( onerror );
-				}
-			}).catch( onerror );
+							})
+							.catch(onerror);
+					}
+				})
+				.catch(onerror);
 		}
 	};
 } else {
 	Loader = class XhrLoader {
-		constructor ( url ) {
+		constructor(url) {
 			this.url = url;
 
 			this._cancelled = false;
 			this._xhr = null;
 		}
 
-		cancel () {
-			if ( this._cancelled ) return;
+		cancel() {
+			if (this._cancelled) return;
 
 			this._cancelled = true;
 
-			if ( this._xhr ) {
+			if (this._xhr) {
 				this._xhr.abort();
 				this._xhr = null;
 			}
 		}
 
-		load ({ onprogress, ondata, onload, onerror }) {
+		load({ onprogress, ondata, onload, onerror }) {
 			this._cancelled = false;
 
 			const xhr = new XMLHttpRequest();
@@ -96,22 +106,22 @@ if ( window.fetch ) {
 			xhr.onerror = onerror;
 
 			xhr.onload = e => {
-				if ( this._cancelled ) return;
+				if (this._cancelled) return;
 
-				onprogress( e.loaded / e.total, e.loaded, e.total );
-				ondata( new Uint8Array( xhr.response ) );
+				onprogress(e.loaded / e.total, e.loaded, e.total);
+				ondata(new Uint8Array(xhr.response));
 				onload();
 
 				this._xhr = null;
 			};
 
 			xhr.onprogress = e => {
-				if ( this._cancelled ) return;
+				if (this._cancelled) return;
 
-				onprogress( e.loaded / e.total, e.loaded, e.total );
+				onprogress(e.loaded / e.total, e.loaded, e.total);
 			};
 
-			xhr.open( 'GET', this.url );
+			xhr.open('GET', this.url);
 			xhr.send();
 
 			this._xhr = xhr;

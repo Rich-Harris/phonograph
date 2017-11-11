@@ -1,40 +1,43 @@
 import Clip from './Clip.js';
 
 export default class Clone extends Clip {
-	constructor ( original ) {
+	constructor(original) {
 		super({ url: original.url });
 		this.original = original;
 	}
 
-	buffer () {
+	buffer() {
 		return this.original.buffer();
 	}
 
-	clone () {
+	clone() {
 		return this.original.clone();
 	}
 
-	get canplaythrough () {
+	get canplaythrough() {
 		return this.original.canplaythrough;
 	}
 
-	set canplaythrough ( _ ) { // eslint-disable-line no-unused-vars
+	set canplaythrough(_) {
+		// eslint-disable-line no-unused-vars
 		// noop
 	}
 
-	get loaded () {
+	get loaded() {
 		return this.original.loaded;
 	}
 
-	set loaded ( _ ) { // eslint-disable-line no-unused-vars
+	set loaded(_) {
+		// eslint-disable-line no-unused-vars
 		// noop
 	}
 
-	get _chunks () {
+	get _chunks() {
 		return this.original._chunks;
 	}
 
-	set _chunks ( _ ) { // eslint-disable-line no-unused-vars
+	set _chunks(_) {
+		// eslint-disable-line no-unused-vars
 		// noop
 	}
 }

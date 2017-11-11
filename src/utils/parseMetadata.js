@@ -22,13 +22,13 @@ const channelModeLookup = {
 	3: 'mono'
 };
 
-export default function parseMetadata ( metadata ) {
-	const mpegVersion = mpegVersionLookup[ metadata.mpegVersion >> 3 ];
+export default function parseMetadata(metadata) {
+	const mpegVersion = mpegVersionLookup[metadata.mpegVersion >> 3];
 
 	return {
 		mpegVersion,
-		mpegLayer: mpegLayerLookup[ metadata.mpegLayer >> 1 ],
-		sampleRate: sampleRateLookup[ metadata.sampleRate >> 2 ] / mpegVersion,
-		channelMode: channelModeLookup[ metadata.channelMode >> 6 ]
+		mpegLayer: mpegLayerLookup[metadata.mpegLayer >> 1],
+		sampleRate: sampleRateLookup[metadata.sampleRate >> 2] / mpegVersion,
+		channelMode: channelModeLookup[metadata.channelMode >> 6]
 	};
 }
