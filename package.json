@@ -4,6 +4,7 @@
   "version": "1.4.4",
   "main": "dist/phonograph.umd.js",
   "module": "dist/phonograph.es.js",
+  "types": "src/index.d.ts",
   "files": [
     "dist",
     "README.md"
@@ -29,12 +30,15 @@
     "eslint": "^4.11.0",
     "rollup": "^0.51.3",
     "rollup-plugin-buble": "^0.17.0",
-    "serve": "^6.4.1"
+    "rollup-plugin-typescript": "^0.8.1",
+    "serve": "^6.4.1",
+    "typescript": "^2.6.1"
   },
   "scripts": {
+    "build-declarations": "tsc -d",
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "prepublish": "npm run lint && npm run build",
+    "prepublish": "npm run lint && npm run build && npm run build-declarations",
     "lint": "eslint src",
     "test": "serve . & open http://localhost:5000/test.html",
     "pretest": "npm run build"

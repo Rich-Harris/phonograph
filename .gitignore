@@ -2,3 +2,6 @@
 node_modules
 experiments
 dist
+*.js
+*.d.ts
+!rollup.config.js

@@ -1,8 +1,8 @@
-import buble from 'rollup-plugin-buble';
+import typescript from 'rollup-plugin-typescript';
 import pkg from './package.json';
 
 export default {
-	input: 'src/index.js',
+	input: 'src/index.ts',
 	output: [
 		{ file: pkg.module, format: 'es' },
 		{ file: pkg.main, format: 'umd' }
@@ -10,8 +10,8 @@ export default {
 	name: 'Phonograph',
 	sourcemap: true,
 	plugins: [
-		buble({
-			transforms: { dangerousForOf: true }
+		typescript({
+			typescript: require('typescript')
 		})
 	]
 };

@@ -1,17 +1,17 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 // http://www.mp3-tech.org/programmer/frame_header.html
 // frame header starts with 'frame sync' – eleven 1s
-export default function isFrameHeader(data, i, metadata) {
-	if (data[i + 0] !== 0b11111111 || (data[i + 1] & 0b11110000) !== 0b11110000)
-		return false;
-
-	return (
-		(data[i + 1] & 0b00000110) !== 0b00000000 &&
-		(data[i + 2] & 0b11110000) !== 0b11110000 &&
-		(data[i + 2] & 0b00001100) !== 0b00001100 &&
-		(data[i + 3] & 0b00000011) !== 0b00000010 &&
-		(data[i + 1] & 0b00001000) === metadata.mpegVersion &&
-		(data[i + 1] & 0b00000110) === metadata.mpegLayer &&
-		(data[i + 2] & 0b00001100) === metadata.sampleRate &&
-		(data[i + 3] & 0b11000000) === metadata.channelMode
-	);
+function isFrameHeader(data, i, metadata) {
+    if (data[i + 0] !== 255 || (data[i + 1] & 240) !== 240)
+        return false;
+    return ((data[i + 1] & 6) !== 0 &&
+        (data[i + 2] & 240) !== 240 &&
+        (data[i + 2] & 12) !== 12 &&
+        (data[i + 3] & 3) !== 2 &&
+        (data[i + 1] & 8) === metadata.mpegVersion &&
+        (data[i + 1] & 6) === metadata.mpegLayer &&
+        (data[i + 2] & 12) === metadata.sampleRate &&
+        (data[i + 3] & 192) === metadata.channelMode);
 }
+exports.default = isFrameHeader;
