@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.5.0
+
+* Port to TypeScript, add declarations
+
 ## 1.4.4
 
 * Always clone data — fixes Chrome bug
