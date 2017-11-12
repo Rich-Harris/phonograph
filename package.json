@@ -39,8 +39,7 @@
     "build-declarations": "tsc -d",
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "prepublish": "npm run lint && npm run build && npm run build-declarations",
-    "lint": "eslint src",
+    "prepublish": "npm run build && npm run build-declarations",
     "test": "serve . & open http://localhost:5000/test.html",
     "pretest": "npm run build"
   }

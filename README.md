@@ -36,7 +36,7 @@ import { Clip } from 'phonograph';
 
 const clip = new Clip({ url: 'some-file.mp3' });
 
-clip.buffer().then( () => {
+clip.buffer().then(() => {
   clip.play();
 });
 ```
@@ -66,7 +66,7 @@ clip = new Clip({
 /*          METHODS         */
 /* ------------------------ */
 
-promise = clip.buffer( complete ).then( ... );
+promise = clip.buffer(complete).then(...);
 // Returns a Promise that resolves on 'canplaythrough' event (see
 // below) or (if `complete === true`) on 'load' event. The `complete`
 // parameter is optional and defaults to `false`
@@ -75,28 +75,28 @@ clone = clip.clone();
 // Returns a lightweight clone of the original clip, which can
 // be played independently but shares audio data with the original.
 
-clip.connect( destination, output, input );
+clip.connect(destination, output, input);
 // Connects to a specific AudioNode. All clips are initially
 // connected to the default AudioContext's `destination` –
 // if you connect to another node then it will disconnect
 // from the default. `output` and `input` are optional. See
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/connect(AudioNode)
 
-clip.disconnect( destination, output, input );
+clip.disconnect(destination, output, input);
 // Disconnects from the `destination` (if specified). All
 // parameters are optional – see
 // https://developer.mozilla.org/en-US/docs/Web/API/AudioNode/disconnect
 
-listener = clip.on( eventName, callback );
+listener = clip.on(eventName, callback);
 // Listen for an event (see below)
 
 listener.cancel();
 // Equivalent to `clip.off( eventName, callback )`
 
-clip.off( eventName, callback );
+clip.off(eventName, callback);
 // Stop listening for the specified event
 
-listener = clip.once( eventName, callback );
+listener = clip.once(eventName, callback);
 // Listen for an event, but stop listening once it's happened
 
 clip.play();
@@ -151,7 +151,7 @@ clip.volume;
 /*          EVENTS          */
 /* ------------------------ */
 
-clip.on( 'loadprogress', ( progress, length, total ) => {
+clip.on('loadprogress', (progress, length, total) => {
   // Fires when data is fetched. `progress` is a value
   // between 0 and 1, equal to `length / total` (both
   // measured in bytes)
@@ -160,39 +160,39 @@ clip.on( 'loadprogress', ( progress, length, total ) => {
   status.textContent = `${percent.toFixed(1)}% loaded`;
 });
 
-clip.on( 'canplaythrough', () => {
+clip.on('canplaythrough', () => {
   // Phonograph estimates (based on clip size and bandwidth)
   // that it will be able to play the clip through without
   // stopping. YMMV!
   clip.play();
 });
 
-clip.on( 'load', () => {
+clip.on('load', () => {
   // All the audio data has been loaded
   clip.play();
 });
 
-clip.on( 'play', () => {
+clip.on('play', () => {
   button.textContent = 'pause';
 });
 
-clip.on( 'progress', () => {
+clip.on('progress', () => {
   playhead.style.transform = `translate(${clip.currentTime/clip.duration}%,0)`;
 });
 
-clip.on( 'pause', () => {
+clip.on('pause', () => {
   button.textContent = 'play';
 });
 
-clip.on( 'ended', () => {
+clip.on('ended', () => {
   alert( 'that\'s all, folks!' );
 });
 
-clip.on( 'loaderror', err => {
+clip.on('loaderror', err => {
   alert( 'Clip failed to load' );
 });
 
-clip.on( 'playbackerror', err => {
+clip.on('playbackerror', err => {
   alert( 'Something went wrong during playback' );
 });
 ```
