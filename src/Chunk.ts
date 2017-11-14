@@ -93,7 +93,7 @@ export default class Chunk {
 		}
 
 		this.context.decodeAudioData(
-			this.extended.buffer,
+			slice(this.extended, 0, this.extended.length).buffer,
 			decoded => {
 				if (timeOffset) {
 					const sampleOffset = ~~(timeOffset * decoded.sampleRate);
