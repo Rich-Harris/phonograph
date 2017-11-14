@@ -7,19 +7,24 @@
 </head>
 <body>
 	<h1>Phonograph</h1>
-	<button>play</button>
+	<button disabled id='play'>play</button>
+	<button disabled id='pause'>pause</button>
 
 	<script src='dist/phonograph.umd.js'></script>
 	<script>
 		const clip = new Phonograph.Clip({
-			url: 'test.mp3'
+			url: 'deepnote.mp3'
 		});
 
-		clip.buffer();
+		clip.buffer().then(() => {
+			play.disabled = pause.disabled = false;
 
-		document.querySelector('button').addEventListener('click', () => {
-			clip.buffer().then(() => {
+			play.addEventListener('click', () => {
 				clip.play();
+			});
+
+			pause.addEventListener('click', () => {
+				clip.pause();
 			});
 		});
 	</script>
