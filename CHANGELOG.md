@@ -1,5 +1,9 @@
 # phonograph changelog
 
+## 1.5.1
+
+* Clone audio data each time `chunk.createSource` is called, to allow playing previously-paused audio on Chrome ([#3](https://github.com/Rich-Harris/phonograph/issues/3))
+
 ## 1.5.0
 
 * Port to TypeScript, add declarations
