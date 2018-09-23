@@ -62,7 +62,7 @@ export default class Chunk {
 		};
 
 		decode((audioData) => {
-                        this.clip._fire('decode', audioData);
+			this.clip._fire('decode', audioData);
 			let numFrames = 0;
 
 			for (let i = this._firstByte; i < this.raw.length; i += 1) {
