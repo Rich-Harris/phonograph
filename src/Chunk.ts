@@ -41,7 +41,7 @@ export default class Chunk {
 
 		this._firstByte = 0;
 
-		const decode = (callback: () => void, errback: (err: Error) => void) => {
+		const decode = (callback: (audioData: AudioBuffer) => void, errback: (err: Error) => void) => {
 			const buffer = slice(raw, this._firstByte, raw.length).buffer;
 
 			this.context.decodeAudioData(buffer, callback, err => {
@@ -61,7 +61,7 @@ export default class Chunk {
 			});
 		};
 
-		decode((audioData) => {
+		decode((audioData: AudioBuffer) => {
 			this.clip._fire('decode', audioData);
 			let numFrames = 0;
 
