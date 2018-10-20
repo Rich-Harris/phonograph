@@ -32,6 +32,7 @@ export default class Clip {
 
 	buffered: number;
 	length: number;
+	size: number;
 	loader: FetchLoader | XhrLoader;
 	loaded: boolean;
 	canplaythrough: boolean;
@@ -49,7 +50,7 @@ export default class Clip {
 	_loadStarted: boolean;
 	_referenceHeader: RawMetadata;
 
-	constructor({ url, loop, volume }: { url: string, loop?: boolean, volume?: number }) {
+	constructor({ url, loop, volume, size}: { url: string, loop?: boolean, volume?: number, size?: number }) {
 		this.url = url;
 		this.callbacks = {};
 		this.context = getContext();
@@ -57,7 +58,8 @@ export default class Clip {
 		this.loop = loop || false;
 
 		this.buffered = 0;
-		this.length = 0;
+		this.length = size || 0;
+		this.size = size || 0;
 
 		this.loader = new (window.fetch ? FetchLoader : XhrLoader)(url);
 		this.loaded = false;
@@ -106,7 +108,7 @@ export default class Clip {
 
 				const bitrate = totalLoadedBytes / elapsed;
 				const estimatedTimeToDownload =
-					1.5 * (this.length - totalLoadedBytes) / bitrate / 1e3;
+					1.5 * (this.length - totalLoadedBytes) / bitrate / 1e4;
 
 				// if we have enough audio that we can start playing now
 				// and finish downloading before we run out, we've
@@ -146,7 +148,7 @@ export default class Clip {
 			this.loader.load({
 				onprogress: (progress: number, length: number, total: number) => {
 					this.buffered = length;
-					this.length = total;
+					this.length = total || this.size || 0;
 					this._fire('loadprogress', { progress, length, total });
 				},
 
@@ -173,18 +175,18 @@ export default class Clip {
 						}
 					}
 
-					for (let i = 0; i < uint8Array.length; i += 1) {
+					for (let j = 0; j < uint8Array.length; j += 1) {
 						// once the buffer is large enough, wait for
 						// the next frame header then drain it
 						if (
 							p > CHUNK_SIZE + 4 &&
-							isFrameHeader(uint8Array, i, this._referenceHeader)
+							isFrameHeader(uint8Array, j, this._referenceHeader)
 						) {
 							drainBuffer();
 						}
 
 						// write new data to buffer
-						tempBuffer[p++] = uint8Array[i];
+						tempBuffer[p++] = uint8Array[j];
 					}
 
 					totalLoadedBytes += uint8Array.length;

@@ -152,8 +152,8 @@ export default class Chunk {
 					this.extended[p++] = this.raw[i];
 				}
 
-				for (let i = 0; i < nextLen; i += 1) {
-					this.extended[p++] = this.next.raw[i];
+				for (let j = 0; j < nextLen; j += 1) {
+					this.extended[p++] = this.next.raw[j];
 				}
 			} else {
 				this.extended =
