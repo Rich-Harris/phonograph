@@ -28,17 +28,18 @@
   },
   "homepage": "https://gitlab.com/Rich-Harris/phonograph#README",
   "devDependencies": {
-    "eslint": "^4.11.0",
-    "rollup": "^0.51.3",
-    "rollup-plugin-buble": "^0.17.0",
-    "rollup-plugin-typescript": "^0.8.1",
-    "serve": "^6.4.1",
-    "typescript": "^2.6.1"
+    "eslint": "^5.10.0",
+    "rollup": "^0.67.4",
+    "rollup-plugin-typescript": "^1.0.0",
+    "sander": "^0.6.0",
+    "serve": "^10.1.1",
+    "tiny-glob": "^0.2.6",
+    "typescript": "^3.2.2"
   },
   "scripts": {
-    "build-declarations": "tsc -d",
+    "build-declarations": "tsc -d && node scripts/move-type-declarations.js",
     "build": "rollup -c",
-    "dev": "rollup -c -w",
+    "dev": "rollup -cw",
     "prepublish": "npm run build && npm run build-declarations",
     "test": "serve . & open http://localhost:5000/demo.html",
     "pretest": "npm run build"

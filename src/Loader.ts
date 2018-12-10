@@ -1,4 +1,15 @@
-export class FetchLoader {
+export interface Loader {
+	cancel(): void;
+
+	load(opts: {
+		onprogress: (progress: number, length: number, total: number) => void;
+		ondata: (data: Uint8Array) => void;
+		onload: () => void;
+		onerror: (error: Error|ProgressEvent) => void;
+	}): void;
+}
+
+export class FetchLoader implements Loader {
 	url: string;
 	_cancelled: boolean;
 
@@ -20,7 +31,7 @@ export class FetchLoader {
 		onprogress: (progress: number, length: number, total: number) => void;
 		ondata: (data: Uint8Array) => void;
 		onload: () => void;
-		onerror: (error: Error|ErrorEvent) => void;
+		onerror: (error: Error) => void;
 	}) {
 		this._cancelled = false;
 
@@ -88,7 +99,7 @@ export class FetchLoader {
 	}
 }
 
-export class XhrLoader {
+export class XhrLoader implements Loader {
 	url: string;
 	_cancelled: boolean;
 	_xhr: XMLHttpRequest;
@@ -120,7 +131,7 @@ export class XhrLoader {
 		onprogress: (progress: number, length: number, total: number) => void;
 		ondata: (data: Uint8Array) => void;
 		onload: () => void;
-		onerror: (error: Error|ErrorEvent) => void;
+		onerror: (error: ProgressEvent) => void;
 	}) {
 		this._cancelled = false;
 

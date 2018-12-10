@@ -1,4 +1,4 @@
-import { FetchLoader, XhrLoader } from './Loader';
+import { Loader, FetchLoader, XhrLoader } from './Loader';
 import Chunk from './Chunk';
 import Clone from './Clone';
 import getContext from './getContext';
@@ -27,43 +27,33 @@ export default class Clip {
 	url: string;
 	loop: boolean;
 
-	callbacks: Record<string, Array<(data?: any) => void>>; // TODO
-	context: AudioContext;
+	callbacks: Record<string, Array<(data?: any) => void>> = {};
+	context: AudioContext = getContext();
 
-	buffered: number;
-	length: number;
-	loader: FetchLoader | XhrLoader;
-	loaded: boolean;
-	canplaythrough: boolean;
+	buffered = 0;
+	length = 0;
+	loaded = false;
+	canplaythrough = false;
+	loader: Loader;
 	metadata: Metadata;
-	playing: boolean;
-	ended: boolean;
+	playing = false;
+	ended = false;
 
 	_startTime: number;
-	_currentTime: number;
+	_currentTime = 0;
+	_chunks: Chunk[] = [];
 	_contextTimeAtStart: number;
 	_connected: boolean;
 	_volume: number;
 	_gain: GainNode;
-	_chunks: Chunk[];
 	_loadStarted: boolean;
 	_referenceHeader: RawMetadata;
 
 	constructor({ url, loop, volume }: { url: string, loop?: boolean, volume?: number }) {
 		this.url = url;
-		this.callbacks = {};
-		this.context = getContext();
-
 		this.loop = loop || false;
 
-		this.buffered = 0;
-		this.length = 0;
-
 		this.loader = new (window.fetch ? FetchLoader : XhrLoader)(url);
-		this.loaded = false;
-		this.canplaythrough = false;
-
-		this._currentTime = 0;
 
 		this._volume = volume || 1;
 		this._gain = this.context.createGain();
@@ -373,6 +363,10 @@ export default class Clip {
 		}
 
 		return total;
+	}
+
+	get paused() {
+		return !this.playing;
 	}
 
 	get volume() {

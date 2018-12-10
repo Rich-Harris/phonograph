@@ -4,11 +4,9 @@ import pkg from './package.json';
 export default {
 	input: 'src/index.ts',
 	output: [
-		{ file: pkg.module, format: 'es' },
-		{ file: pkg.main, format: 'umd' }
+		{ file: pkg.module, format: 'es', sourcemap: true },
+		{ file: pkg.main, format: 'umd', name: 'Phonograph', sourcemap: true }
 	],
-	name: 'Phonograph',
-	sourcemap: true,
 	plugins: [
 		typescript({
 			typescript: require('typescript')
