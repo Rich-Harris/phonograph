@@ -143,6 +143,12 @@ clip.loaded;
 clip.loop;
 // If `true`, the clip will restart once it finishes
 
+clip.paused;
+// self-explanatory
+
+clip.playing
+// the inverse of clip.paused
+
 clip.volume;
 // Volume between 0 (silent) and 1 (max)
 
