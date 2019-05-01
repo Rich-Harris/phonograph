@@ -18,7 +18,7 @@ export default function getFrameLength(data: Uint8Array, i: number, metadata: Me
 
 	const bitrateCode = (data[i + 2] & 0b11110000) >> 4;
 	const bitrate = bitrateLookup[`${mpegVersion}${mpegLayer}`][bitrateCode] * 1e3;
-	const padding = (data[2] & 0b00000010) >> 1;
+	const padding = (data[i + 2] & 0b00000010) >> 1;
 
 	const length = ~~(mpegLayer === 1
 		? (12 * bitrate / sampleRate + padding) * 4
