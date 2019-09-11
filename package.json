@@ -4,7 +4,7 @@
   "version": "1.6.0",
   "main": "dist/phonograph.umd.js",
   "module": "dist/phonograph.es.js",
-  "types": "src/index.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "src",
     "dist",
@@ -37,7 +37,7 @@
     "typescript": "^3.2.2"
   },
   "scripts": {
-    "build-declarations": "tsc -d && node scripts/move-type-declarations.js",
+    "build-declarations": "tsc -d",
     "build": "rollup -c",
     "dev": "rollup -cw",
     "prepublish": "npm run build && npm run build-declarations",
